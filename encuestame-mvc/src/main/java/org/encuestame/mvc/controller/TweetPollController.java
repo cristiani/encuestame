@@ -13,6 +13,7 @@
 
 package org.encuestame.mvc.controller;
 
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -23,6 +24,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.encuestame.core.service.imp.SecurityOperations;
 import org.encuestame.core.util.ConvertDomainBean;
+import org.encuestame.core.util.EnMeUtils;
 import org.encuestame.mvc.controller.social.AbstractSocialController;
 import org.encuestame.mvc.validator.ValidateOperations;
 import org.encuestame.persistence.domain.HashTag;
@@ -34,6 +36,7 @@ import org.encuestame.utils.captcha.ReCaptchaResponse;
 import org.encuestame.utils.enums.HitCategory;
 import org.encuestame.utils.enums.TypeSearchResult;
 import org.encuestame.utils.json.SocialAccountBean;
+import org.encuestame.utils.social.SocialProvider;
 import org.encuestame.utils.vote.UtilVoteCaptcha;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -65,12 +68,13 @@ public class TweetPollController extends AbstractSocialController {
      * @param model model
      * @param id id tweet
      * @return view to redirect.
+     * @throws UnknownHostException 
      */
     @RequestMapping(value = "/tweetpoll/vote/{tweetId}", method = RequestMethod.GET)
     public String tweetPollController(
         ModelMap model,
         @PathVariable String tweetId,
-        final HttpServletRequest req) {
+        final HttpServletRequest req) throws UnknownHostException {
         log.debug("tweetId: "+tweetId);
         String pathVote = "badTweetVote";
         final String IP = getIpClient(req);
@@ -101,27 +105,29 @@ public class TweetPollController extends AbstractSocialController {
                     model.put("message", "Tweetpoll is closed, no more votes.");
                 }else {
                     log.info("Validate Votting");
-                        log.info("IP" + IP);
-                        if (getTweetPollService().validateTweetPollIP(IP, tweetPoll.getTweetPoll()) == null) {
-                            if (!tweetPoll.getTweetPoll().getCaptcha()) {
-                                getTweetPollService().tweetPollVote(tweetPoll, IP, Calendar.getInstance().getTime());
-                                model.put("message", "Tweet Poll Voted.");
-                                pathVote = "tweetVoted";
-                                log.debug("VOTED");
-                            } else {
-                                this.createCaptcha(model, tweetId);
-                                log.debug("VOTE WITH CAPTCHA");
-                                pathVote = "voteCaptcha";
-                            }
-                        }
-                        else{
-                            log.debug("Tweet Vote Repeteaded.");
-                            model.put("message", "Tweet Vote Repeteaded.");
-                            pathVote = "repeatedTweetVote";
-                        }
-                        model.get("message");
-                     }
-            }
+					log.info("IP" + IP);
+					try {
+						getTweetPollService().validateIpVote(IP,
+								tweetPoll.getTweetPoll());
+						if (!tweetPoll.getTweetPoll().getCaptcha()) {
+							getTweetPollService().tweetPollVote(tweetPoll, IP,
+									Calendar.getInstance().getTime());
+							model.put("message", "Tweet Poll Voted.");
+							pathVote = "tweetVoted";
+							log.debug("VOTED");
+						} else {
+							this.createCaptcha(model, tweetId);
+							log.debug("VOTE WITH CAPTCHA");
+							pathVote = "voteCaptcha";
+						}
+					} catch (Exception e) {
+						// TODO: handle exception
+						log.error("");
+						pathVote = "repeatedTweetVote";
+					}
+
+				}
+			}
         }
         log.info("redirect template WHERE "+pathVote);
         return pathVote;
@@ -151,6 +157,7 @@ public class TweetPollController extends AbstractSocialController {
      * @param result {@link BindingResult}.
      * @param model {@link ModelMap}.
      * @return view to redirect.
+     * @throws UnknownHostException 
      */
     @RequestMapping(method = RequestMethod.POST)
     public String processSubmit(
@@ -160,7 +167,7 @@ public class TweetPollController extends AbstractSocialController {
             @RequestParam("vote_code") String code,
             @ModelAttribute("captchaForm") UtilVoteCaptcha vote,
             BindingResult result,
-            Model model) {
+            Model model) throws UnknownHostException {
              log.info("recaptcha_challenge_field "+challenge);
              log.info("recaptcha_rforgotesponse_field "+response);
              log.info("code "+code.toString());
@@ -171,6 +178,7 @@ public class TweetPollController extends AbstractSocialController {
              code = filterValue(code);
              vote = (UtilVoteCaptcha) model.asMap().get("captchaForm");
              log.info("vote2--> "+vote.toString());
+             final String IP = getIpClient(req);
              //security service
              final SecurityOperations securityService = getServiceManager().getApplicationServices().getSecurityService();
              //check if captcha is valid
@@ -198,17 +206,22 @@ public class TweetPollController extends AbstractSocialController {
                  model.addAttribute("switch", tweetPoll);
                  //Validate Code.
                  if (tweetPoll == null || !tweetPoll.getTweetPoll().getPublishTweetPoll()) {
-                     log.debug("tweetpoll answer not found");
-
+                     log.debug("tweetpoll answer not found"); 
                      return "badTweetVote";
                      //model.addAttribute("message", "Tweet Not Valid.");
-                 } else {
-                     //save the vote.
-                     final String IP = getIpClient(req);
-                     log.info("IP" + IP);
-                     getTweetPollService().tweetPollVote(tweetPoll, IP, Calendar.getInstance().getTime());
-                     return "tweetVoted";
-                 }
+                 	}
+                 else {
+                	 // Vote
+                	 try {
+                		 getTweetPollService().validateIpVote(IP, tweetPoll.getTweetPoll());
+                    	 getTweetPollService().tweetPollVote(tweetPoll, IP, Calendar.getInstance().getTime());
+                    	 return "tweetVoted"; 
+                    	 
+					} catch (Exception e) { 
+						 log.error("Bad tweetpoll process submit --- >" + e);
+						return "repeatedTweetVote";
+					} 
+                 } 
             }
     }
 
@@ -220,8 +233,27 @@ public class TweetPollController extends AbstractSocialController {
     @PreAuthorize("hasRole('ENCUESTAME_USER')")
     @RequestMapping(value = "/user/tweetpoll/list", method = RequestMethod.GET)
     public String tweetPollController(final ModelMap model) {
-        log.debug("tweetpoll");
-        return "tweetpoll";
+    	addItemsManangeMessages(model);
+    	addi18nProperty(model, "tweetpoo_detail_tab_detail", getMessage("tweetpoo_detail_tab_detail"));
+    	addi18nProperty(model, "tweetpoo_detail_tab_stats", getMessage("tweetpoo_detail_tab_stats"));
+    	addi18nProperty(model, "tweetpoo_detail_tab_comments", getMessage("tweetpoo_detail_tab_comments"));
+    	addi18nProperty(model, "tweetpoo_detail_tab_social", getMessage("tweetpoo_detail_tab_social"));
+    	addi18nProperty(model, "tweetpoo_detail_tab_delete", getMessage("tweetpoo_detail_tab_delete"));
+    	addi18nProperty(model, "tweetpoo_detail_answers_title_link", getMessage("tweetpoo_detail_answers_title_link"));
+    	addi18nProperty(model, "tweetpoo_detail_answers_title_count", getMessage("tweetpoo_detail_answers_title_count"));
+    	addi18nProperty(model, "tweetpoo_detail_answers_title_percent", getMessage("tweetpoo_detail_answers_title_percent"));    	
+    	addi18nProperty(model, "commons_created_date", getMessage("commons_created_date"));
+    	addi18nProperty(model, "commons_captcha", getMessage("commons_captcha"));
+    	addi18nProperty(model, "tp_options_allow_results", getMessage("tp_options_allow_results"));
+    	addi18nProperty(model, "tp_options_follow_dashboard", getMessage("tp_options_follow_dashboard"));
+    	addi18nProperty(model, "tp_options_allow_repeated_votes", getMessage("tp_options_allow_repeated_votes"));
+    	addi18nProperty(model, "tp_options_notifications", getMessage("tp_options_notifications"));
+    	addi18nProperty(model, "related_terms", getMessage("related_terms"));
+    	addi18nProperty(model, "commons_success", getMessage("commons_success"));
+    	addi18nProperty(model, "commons_favourite");
+    	addi18nProperty(model, "e_023");
+    	addi18nProperty(model, "commons_unfavourite");
+    	return "tweetpoll";
     }
 
     /**
@@ -244,11 +276,10 @@ public class TweetPollController extends AbstractSocialController {
     @PreAuthorize("hasRole('ENCUESTAME_USER')")
     @RequestMapping(value = "/user/tweetpoll/new", method = RequestMethod.GET)
     public String newTweetPollController(final ModelMap model) {
-        log.debug("tweetpoll new");
         //check social accounts.
         String path = "tweetpoll/new";
         try {
-            final List<SocialAccountBean> socials = getSecurityService().getValidSocialAccounts(null, false);
+            final List<SocialAccountBean> socials = getSecurityService().getValidSocialAccounts(SocialProvider.ALL, false);
             if (socials.size() == 0) {
                 path = "tweetpoll/social";
             }
@@ -257,6 +288,41 @@ public class TweetPollController extends AbstractSocialController {
             path = "505";
         }
         log.debug("newTweetPollController "+path);
+        //log.debug("tweetpoll new");
+    	addi18nProperty(model, "tp_write_questions", getMessage("tp_write_questions"));
+    	addi18nProperty(model, "tp_add_answer", getMessage("tp_add_answer"));
+    	addi18nProperty(model, "tp_add_hashtag", getMessage("tp_add_hashtag"));
+    	addi18nProperty(model, "tp_scheduled", getMessage("tp_scheduled"));
+    	addi18nProperty(model, "tp_customize", getMessage("tp_customize"));
+    	addi18nProperty(model, "tp_select_publish", getMessage("tp_select_publish"));
+    	addi18nProperty(model, "tp_options_chart", getMessage("tp_options_chart"));
+    	addi18nProperty(model, "tp_options_spam", getMessage("tp_options_spam"));
+    	addi18nProperty(model, "tp_options_report", getMessage("tp_options_report"));
+    	addi18nProperty(model, "tp_options_scheduled_this_tweetpoll", getMessage("tp_options_scheduled_this_tweetpoll"));
+    	addi18nProperty(model, "tp_options_allow_results", getMessage("tp_options_allow_results"));
+    	addi18nProperty(model, "tp_options_allow_repeated_votes", getMessage("tp_options_allow_repeated_votes"));
+    	addi18nProperty(model, "tp_options_limit_votes", getMessage("tp_options_limit_votes"));
+    	addi18nProperty(model, "tp_options_resume_live_results", getMessage("tp_options_resume_live_results"));
+    	addi18nProperty(model, "tp_options_follow_dashboard", getMessage("tp_options_follow_dashboard"));
+    	addSocialPickerWidgetMessages(model);
+    	addi18nProperty(model, "button_add", getMessage("button_add"));
+    	addi18nProperty(model, "button_remove", getMessage("button_remove"));
+    	addi18nProperty(model, "button_close", getMessage("button_close"));
+    	addi18nProperty(model, "button_finish", getMessage("button_finish"));
+    	addi18nProperty(model, "button_publish", getMessage("button_publish"));
+    	addi18nProperty(model, "button_try_again", getMessage("button_try_again"));
+    	addi18nProperty(model, "button_ignore", getMessage("button_ignore"));
+    	addi18nProperty(model, "button_try_later", getMessage("button_try_later"));
+    	addi18nProperty(model, "commons_captcha", getMessage("commons_captcha"));
+    	addi18nProperty(model, "tp_publish_error", getMessage("tp_publish_error"));
+    	addi18nProperty(model, "pubication_failure_status", getMessage("pubication_failure_status"));
+    	addi18nProperty(model, "pubication_success_status", getMessage("pubication_success_status"));
+    	addi18nProperty(model, "pubication_inprocess_status", getMessage("pubication_inprocess_status"));
+    	addi18nProperty(model, "e_020", getMessage("e_020"));
+    	addi18nProperty(model, "e_021", getMessage("e_021"));
+    	addi18nProperty(model, "e_024", getMessage("e_024"));
+    	addi18nProperty(model, "commons_success", getMessage("commons_success"));
+    	addi18nProperty(model, "commons_failure", getMessage("commons_failure"));
         return path;
     }
 
@@ -266,13 +332,14 @@ public class TweetPollController extends AbstractSocialController {
      * @param id tweetpoll id
      * @param slug slug question name.
      * @return
+     * @throws UnknownHostException 
      */
     @RequestMapping(value = "/tweetpoll/{id}/{slug}", method = RequestMethod.GET)
     public String detailTweetPollController(
             final ModelMap model,
             @PathVariable Long id,
             @PathVariable String slug,
-            final HttpServletRequest request) {
+            final HttpServletRequest request) throws UnknownHostException {
         log.debug("detailTweetPollController "+id);
         log.debug("detailTweetPollController "+slug);
         final String ipAddress = getIpClient(request);

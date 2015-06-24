@@ -55,8 +55,8 @@ import org.hibernate.search.annotations.IndexedEmbedded;
 @Indexed(index="TweetPoll")
 @Entity
 @Table(name = "tweetPoll")
-@Cacheable
-@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+//@Cacheable
+//@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class TweetPoll extends AbstractGeoPoint{
 
     private Long tweetPollId;
@@ -109,7 +109,7 @@ public class TweetPoll extends AbstractGeoPoint{
     /**
      * Enable a limit of valid votes.
      **/
-    private Boolean limitVotesEnabled;
+    private Boolean limitVotesEnabled  = false;
 
     /**
      * Limit Votes.
@@ -135,7 +135,7 @@ public class TweetPoll extends AbstractGeoPoint{
     /**
      * Repeated Votes
      * **/
-    private Boolean allowRepatedVotes;
+    private Boolean allowRepatedVotes  = false;
 
     /**
      * Limit of repeated votes by user (ip).

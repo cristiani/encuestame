@@ -23,10 +23,12 @@ import javax.persistence.ManyToOne;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.validation.constraints.Size;
 
 import org.encuestame.persistence.domain.security.Account;
 import org.encuestame.persistence.domain.security.UserAccount;
 import org.encuestame.utils.enums.CommentOptions;
+import org.encuestame.utils.enums.ShowResultsOptions;
 import org.hibernate.search.annotations.Field;
 import org.hibernate.search.annotations.Index;
 import org.hibernate.search.annotations.Store;
@@ -38,6 +40,27 @@ import org.hibernate.search.annotations.Store;
  */
 @MappedSuperclass
 public abstract class AbstractSurvey extends AbstractGeoPoint {
+
+    /**
+     * Enable a limit of valid votes.
+     **/
+    private Boolean limitVotesEnabled  = false;
+
+    /**
+     * Limit Votes.
+     **/
+    private Integer limitVotes;
+
+    /**
+     * Enable a limit of valid votes.
+     **/
+    private Boolean allowRepeatedVotes  = false;
+
+    /**
+     * Limit Votes.
+     **/
+    private Integer repeatedVotes;
+
 
     /**
      * Use a custom start message.
@@ -53,6 +76,12 @@ public abstract class AbstractSurvey extends AbstractGeoPoint {
      * Define which user create this tweetPoll.
      */
     private UserAccount editorOwner;
+
+    /** Define if is Scheduled **/
+    private Boolean scheduled;
+
+    /** Scheduled Date. **/
+    private Date scheduleDate;
 
     /**
      * Define the account owner of the item.
@@ -118,7 +147,7 @@ public abstract class AbstractSurvey extends AbstractGeoPoint {
     /**
      * Survey Closing after date.
      */
-     private Boolean closeAfterDate;
+     private Boolean closeAfterDate = false;
 
      /**
       * Close Date.
@@ -128,7 +157,7 @@ public abstract class AbstractSurvey extends AbstractGeoPoint {
      /**
       * Survey Closing after quota.
       */
-    private Boolean closeAfterquota;
+    private Boolean closeAfterquota = false;
 
     /**
      * Close Quota.
@@ -138,7 +167,7 @@ public abstract class AbstractSurvey extends AbstractGeoPoint {
     /**
      * Show Results
      */
-    private Boolean showResults;
+    private ShowResultsOptions showResults;
 
     /**
      * Show Comments Option.
@@ -191,7 +220,7 @@ public abstract class AbstractSurvey extends AbstractGeoPoint {
     /**
      * Mark as favourites.
      */
-    private Boolean favorites = false;
+    private Boolean favourites = false;
 
     /**
      * Update Date
@@ -203,10 +232,35 @@ public abstract class AbstractSurvey extends AbstractGeoPoint {
      ***/
     private Date endDate;
 
+
+    /** Create Date. **/
+    private Date createDate;
+
+    /** Defines if the poll is Hidden(only to show through URL or password) **/
+    private Boolean isHidden = false;
+
+    /** Defines if the poll will be password protected for access **/
+    private Boolean isPasswordProtected = false;
+
+    /** Password to enter the poll **/
+    private String password;
+
     /**
-     * Survey created at.
-     ***/
-    private Date createdAt;  
+     * @return the createDate
+     */
+    @Temporal(TemporalType.TIMESTAMP)
+    //FIXME: change to  created_date, this means update all SQL script files
+    @Column(name = "created_at", nullable = true)
+    public Date getCreateDate() {
+        return createDate;
+    }
+
+    /**
+     * @param createDate the createDate to set
+     */
+    public void setCreateDate(Date createDate) {
+        this.createDate = createDate;
+    }
 
     /**
      * @return the customMessage.
@@ -411,14 +465,15 @@ public abstract class AbstractSurvey extends AbstractGeoPoint {
      * @return the showResults
      */
     @Column(name = "show_results")
-    public Boolean getShowResults() {
+    @Enumerated(EnumType.ORDINAL)
+    public ShowResultsOptions getShowResults() {
         return showResults;
     }
 
     /**
      * @param showResults the showResults to set
      */
-    public void setShowResults(final Boolean showResults) {
+    public void setShowResults(final ShowResultsOptions showResults) {
         this.showResults = showResults;
     }
 
@@ -592,16 +647,16 @@ public abstract class AbstractSurvey extends AbstractGeoPoint {
     /**
      * @return the favourites
      */
-    @Column(name = "favorites")
-    public Boolean getFavorites() {
-        return favorites;
+    @Column(name = "favorites") //FUTURE: change to favourites
+    public Boolean getFavourites() {
+        return favourites;
     }
 
     /**
      * @param favourites the favourites to set
      */
-    public void setFavorites(final Boolean favorites) {
-        this.favorites = favorites;
+    public void setFavourites(final Boolean favourites) {
+        this.favourites = favourites;
     }
 
     /**
@@ -654,18 +709,148 @@ public abstract class AbstractSurvey extends AbstractGeoPoint {
     }
 
     /**
-     * @return the createdAt
+     * @return the getScheduled
      */
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "created_at")
-    public Date getCreatedAt() {
-        return createdAt;
+    @Column(name = "schedule", nullable = true)
+    public Boolean getScheduled() {
+        return scheduled;
     }
 
     /**
-     * @param createdAt the createdAt to set
+     * @param setScheduled
+     *  the scheduled to set
      */
-    public void setCreatedAt(final Date createdAt) {
-        this.createdAt = createdAt;
-    } 
+    public void setScheduled(final Boolean scheduled) {
+        this.scheduled = scheduled;
+    }
+
+    /**
+     * @return the scheduleDate
+     */
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "schedule_date_tweet", nullable = true)
+    public Date getScheduleDate() {
+        return scheduleDate;
+    }
+
+    /**
+     * @param scheduleDate
+     *            the scheduleDate to set
+     */
+    public void setScheduleDate(final Date scheduleDate) {
+        this.scheduleDate = scheduleDate;
+    }
+
+    /**
+     * @return the limitVotesEnabled
+     */
+    @Column(name = "limits_votes_enabled")
+    public Boolean getLimitVotesEnabled() {
+        return limitVotesEnabled;
+    }
+
+    /**
+     * @param limitVotesEnabled the limitVotesEnabled to set
+     */
+    public void setLimitVotesEnabled(Boolean limitVotesEnabled) {
+        this.limitVotesEnabled = limitVotesEnabled;
+    }
+
+    /**
+     * @return the limitVotes
+     */
+    @Column(name = "limit_votes", nullable = true)
+    public Integer getLimitVotes() {
+        return limitVotes;
+    }
+
+    /**
+     * @param limitVotes the limitVotes to set
+     */
+
+    public void setLimitVotes(Integer limitVotes) {
+        this.limitVotes = limitVotes;
+    }
+
+    /**
+     * @return the allowRepeatedVotes
+     */
+    @Column(name = "repeated_votes_enabled")
+    public Boolean getAllowRepeatedVotes() {
+        return allowRepeatedVotes;
+    }
+
+    /**
+     * @param allowRepeatedVotes the allowRepeatedVotes to set
+     */
+
+    public void setAllowRepeatedVotes(Boolean allowRepeatedVotes) {
+        this.allowRepeatedVotes = allowRepeatedVotes;
+    }
+
+    /**
+     * @return the repeatedVotes
+     * @deprecated use quota field instead this one
+     */
+    @Deprecated
+    @Column(name = "repeated_votes", nullable = true)
+    public Integer getRepeatedVotes() {
+        return repeatedVotes;
+    }
+
+    /**
+     * @param repeatedVotes the repeatedVotes to set
+     * @deprecated use quota field instead this one
+     */
+    @Deprecated
+    public void setRepeatedVotes(Integer repeatedVotes) {
+        this.repeatedVotes = repeatedVotes;
+    }
+
+
+    /**
+	 * @return the isHidden
+	 */
+    @Column(name = "is_hidden", nullable = true)
+	public Boolean getIsHidden() {
+		return isHidden;
+	}
+
+	/**
+	 * @param isHidden the isHidden to set
+	 */
+	public void setIsHidden(Boolean isHidden) {
+		this.isHidden = isHidden;
+	}
+
+	/**
+	 * @return the isPasswordProtected
+	 */
+	@Column(name = "is_password_protected", nullable = true)
+	public Boolean getIsPasswordProtected() {
+		return isPasswordProtected;
+	}
+
+	/**
+	 * @param isPasswordProtected the isPasswordProtected to set
+	 */
+	public void setIsPasswordProtected(Boolean isPasswordProtected) {
+		this.isPasswordProtected = isPasswordProtected;
+	}
+
+	/**
+	 * @return the password
+	 */
+	@Size(max=5)
+	@Column(name = "poll_password", nullable = true)
+	public String getPassword() {
+		return password;
+	}
+
+	/**
+	 * @param password the password to set
+	 */
+	public void setPassword(String password) {
+		this.password = password;
+	}
 }

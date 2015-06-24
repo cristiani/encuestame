@@ -18,6 +18,9 @@ import java.io.PrintWriter;
 import java.net.URL;
 
 import javax.net.ssl.HttpsURLConnection;
+import javax.validation.Path.Node;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
@@ -27,12 +30,18 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
+
+import javax.xml.xpath.XPath;
+
 import org.encuestame.core.config.EnMePlaceHolderConfigurer;
+import org.encuestame.core.filter.RequestSessionMap;
+import org.encuestame.persistence.exception.EnMeExpcetion;
 import org.encuestame.persistence.exception.EnmeFailOperation;
 import org.encuestame.utils.social.SocialProvider;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.springframework.util.Assert;
+import org.w3c.dom.Document;
 
 /**
  * Social Util Helpers.
@@ -67,7 +76,7 @@ public class SocialUtils {
     /**
      * Facebook scopes.
      */
-    public static final String FACEBOOK_SCOPE = "email,read_stream,publish_stream,user_status,user_location,offline_access";
+    public static final String FACEBOOK_SCOPE = "email,read_stream,publish_actions,user_status,user_location";
 
     /**
      * Twitter limit.
@@ -139,6 +148,57 @@ public class SocialUtils {
         }
         return shortUrl;
     }
+
+
+    /**
+     * Get TinyUrl.
+     * @param url
+     * @return
+     * @throws HttpException
+     * @throws IOException
+     */
+    public static String getYourls(final String url) {
+        String yourlsShortUrl = url;
+        HttpClientParams params = new HttpClientParams();
+        params.setConnectionManagerTimeout(EnMePlaceHolderConfigurer.getIntegerProperty("application.timeout"));
+        params.setSoTimeout(EnMePlaceHolderConfigurer.getIntegerProperty("application.timeout"));
+        HttpClient httpclient = new HttpClient(params); //TODO: time out??
+        HttpMethod method = new GetMethod(EnMePlaceHolderConfigurer.getProperty("short.yourls.path"));
+        method.setQueryString(new NameValuePair[] {
+                new NameValuePair("url", url),
+                new NameValuePair("action", "shorturl"),
+                new NameValuePair("format", "json"),
+                new NameValuePair("signature", EnMePlaceHolderConfigurer.getProperty("short.yourls.key"))
+        });
+        System.out.println("method--->"+method.getPath());
+        System.out.println("method--->"+method.getQueryString());
+        try {
+            httpclient.executeMethod(method);
+            final Object jsonObject = JSONValue.parse(method.getResponseBodyAsString());
+            final JSONObject o = (JSONObject) jsonObject;
+            //{"message":"Please log in","errorCode":403}"
+            Long errorCode = (Long) o.get("errorCode");
+            if (errorCode != null) {
+               throw new EnMeExpcetion("Yourls error: " + errorCode);
+            }
+            yourlsShortUrl = (String) o.get("shorturl");
+        } catch (HttpException e) {
+            log.error("HttpException "+ e);
+            yourlsShortUrl = url;
+        } catch (IOException e) {
+            log.error("IOException"+ e);
+            yourlsShortUrl = url;
+        } catch (Exception e) {
+            //e.printStackTrace();
+            log.error("IOException"+ e);
+            yourlsShortUrl = url;
+        } finally {
+            RequestSessionMap.setErrorMessage("short url is not well configured");
+            method.releaseConnection();
+        }
+        return yourlsShortUrl;
+    }
+
 
     /**
      * Get TinyUrl.
@@ -249,6 +309,15 @@ public class SocialUtils {
                 facebookUrl = facebookUrl.replace("{A}", array[1]);
                 builder.append(facebookUrl);
             }
+        } else if(SocialProvider.PLURK.equals(provider)){
+            String tumblrLink = EnMePlaceHolderConfigurer.getProperty("social.plurk");
+            tumblrLink = tumblrLink.replace("{0}", username.toString());
+            builder.append(tumblrLink);
+        } else if(SocialProvider.TUMBLR.equals(provider)){
+            String tumblrLink = EnMePlaceHolderConfigurer.getProperty("social.tubmlr");
+            tumblrLink.replace("{username}", username);
+            tumblrLink.replace("{id}", id);
+            builder.append(tumblrLink);
         } else if(SocialProvider.LINKEDIN.equals(provider)){
             builder.append(EnMePlaceHolderConfigurer.getProperty("social.linkedin"));
         } else if(SocialProvider.IDENTICA.equals(provider)){
@@ -256,7 +325,7 @@ public class SocialUtils {
              identicaUrl = identicaUrl.replace("{id}", id);
              builder.append(identicaUrl);
         }
-        log.debug("getSocialTweetPublishedUrl "+builder.toString());
+        //log.debug("getSocialTweetPublishedUrl "+builder.toString());
         return builder.toString();
     }
 

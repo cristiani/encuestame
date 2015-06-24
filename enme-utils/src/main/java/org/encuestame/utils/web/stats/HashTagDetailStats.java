@@ -13,11 +13,10 @@
 package org.encuestame.utils.web.stats;
 
 import java.io.Serializable;
-import java.util.Date;
 
-import org.codehaus.jackson.annotate.JsonIgnore;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.annotate.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.encuestame.utils.enums.TypeSearchResult;
 import org.joda.time.DateTime;
 
@@ -121,6 +120,7 @@ public class HashTagDetailStats implements Serializable, Comparable<Object> {
 	/**
 	 * @return the dateValue
 	 */
+	@JsonIgnore
 	public DateTime getDateValue() {
 		return dateValue;
 	}
@@ -136,6 +136,7 @@ public class HashTagDetailStats implements Serializable, Comparable<Object> {
 	/**
 	 * @return the milisecondsDate
 	 */
+	@JsonIgnore
 	public Long getMilisecondsDate() {
 		return milisecondsDate;
 	}

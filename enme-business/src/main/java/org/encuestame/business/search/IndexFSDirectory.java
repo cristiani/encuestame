@@ -20,7 +20,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.encuestame.core.search.DirectoryIndexStore;
-import org.encuestame.core.service.DirectorySetupOperations;
+import org.encuestame.core.service.startup.DirectorySetupOperations;
 import org.encuestame.persistence.exception.EnmeFailOperation;
 
 /**
@@ -51,11 +51,11 @@ public class IndexFSDirectory implements DirectoryIndexStore {
                 //do action
             }
         } catch (IOException e) {
-            log.fatal("Directory not found where save data");
+            log.debug("Directory not found where save data");
             //do action
             //System.getProperty("user.home");
         } catch (EnmeFailOperation e) {
-            log.fatal("index directory not found "+e);
+            log.debug("index directory not found "+e);
         }
     }
 

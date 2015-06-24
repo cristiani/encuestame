@@ -15,10 +15,10 @@ package org.encuestame.utils.web;
 import java.io.Serializable;
 import java.util.Date;
 
-import org.codehaus.jackson.annotate.JsonIgnore;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.annotate.JsonProperty;
-import org.encuestame.utils.enums.CommentStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.encuestame.utils.enums.CommentOptions;
 import org.encuestame.utils.enums.TypeSearchResult;
 
 /**
@@ -89,7 +89,7 @@ public class CommentBean implements Serializable{
     private Long parentId;
 
     @JsonProperty(value = "comment_status")
-    private CommentStatus status;
+    private CommentOptions status;
 
     /**
      * @return the commentId
@@ -275,14 +275,14 @@ public class CommentBean implements Serializable{
 	/**
 	 * @return the status
 	 */
-	public CommentStatus getStatus() {
+	public CommentOptions getStatus() {
 		return status;
 	}
 
 	/**
 	 * @param status the status to set
 	 */
-	public void setStatus(CommentStatus status) {
+	public void setStatus(CommentOptions status) {
 		this.status = status;
 	}
 }

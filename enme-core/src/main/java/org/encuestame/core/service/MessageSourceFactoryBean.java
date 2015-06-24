@@ -25,10 +25,9 @@ import org.springframework.stereotype.Service;
  * Message Source Factory Bean.
  * @author Picado, Juan juanATencuestame.org
  * @since 12/05/2009 9:17:43
- * @version $Id$
  */
 @Service
-public class MessageSourceFactoryBean implements MessageSource {
+public class MessageSourceFactoryBean  implements MessageSource{
 
     /**
      * Log.
@@ -38,16 +37,22 @@ public class MessageSourceFactoryBean implements MessageSource {
     /**
      *
      */
-    @Autowired
     private MessageSource messageSource;
 
     /**
      *
-     * @param messagesource
      */
-    public void setMessagesource(final MessageSource messagesource) {
-        this.messageSource = messagesource;
+    public MessageSourceFactoryBean() {}
+
+    /**
+     *
+     * @param messageSource
+     */
+    public MessageSourceFactoryBean(MessageSource messageSource) {
+        super();
+        this.messageSource = messageSource;
     }
+
 
     /**
      *
@@ -55,7 +60,7 @@ public class MessageSourceFactoryBean implements MessageSource {
     public String getMessage(final MessageSourceResolvable resolvable,
             final Locale locale)
             throws NoSuchMessageException {
-        log.debug("Message Source Factory Bean 1");
+        //log.debug("Message Source Factory Bean 1");
         return messageSource.getMessage(resolvable, getDefaultLocale(locale));
     }
 
@@ -67,7 +72,7 @@ public class MessageSourceFactoryBean implements MessageSource {
             final Object[] args,
             final Locale locale)
             throws NoSuchMessageException {
-        log.debug("Message Source Factory Bean 2");
+        //log.debug("Message Source Factory Bean 2");
         return messageSource.getMessage(
                 code,
                 args,
@@ -81,7 +86,7 @@ public class MessageSourceFactoryBean implements MessageSource {
      */
     public String getMessage(String code, Object[] args, String defaultMessage,
             Locale locale) {
-        log.debug("Message Source Factory Bean 3");
+        //log.debug("Message Source Factory Bean 3");
         return messageSource.getMessage(code, args, defaultMessage,
                 getDefaultLocale(locale));
     }
@@ -94,7 +99,25 @@ public class MessageSourceFactoryBean implements MessageSource {
      */
     protected Locale getDefaultLocale(Locale locale) {
         final Locale locales = locale ==  null  ? Locale.ENGLISH : locale;
-        log.debug("Message Source Factory Bean :::==> " + locales);
+        //log.debug("Message Source Factory Bean :::==> " + locales);
         return locales;
     }
+
+    /**
+     *
+     * @return
+     */
+    public MessageSource getMessageSource() {
+        return messageSource;
+    }
+
+    /**
+     *
+     * @param messageSource
+     */
+    @Autowired
+    public void setMessageSource(MessageSource messageSource) {
+        this.messageSource = messageSource;
+    }
+
 }

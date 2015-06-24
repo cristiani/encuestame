@@ -17,20 +17,25 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.lang.LocaleUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.encuestame.core.config.EnMePlaceHolderConfigurer;
 import org.encuestame.core.files.PathUtil;
+import org.encuestame.core.security.details.EnMeUserAccountDetails;
 import org.encuestame.core.util.SocialUtils;
 import org.encuestame.persistence.exception.EnMeExpcetion;
 import org.encuestame.utils.MD5Utils;
 import org.encuestame.utils.PictureUtils;
 import org.encuestame.utils.ShortUrlProvider;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 
 /**
  * Dojo Widget Utils.
@@ -55,6 +60,75 @@ public class WidgetUtil {
         final StringBuilder domain = new StringBuilder(WidgetUtil.getDomain(request));
         domain.append(PathUtil.profileUserImage);
         return domain.toString();
+    }
+
+    /**
+     * Get the current locale, get the language from the {@link UserDetails} if is missing get the locale from the context
+     * @param request {@link HttpServletRequest}
+     * @return
+     */
+    public static String getCurrentLocale(final HttpServletRequest request) {
+        return WidgetUtil.convertToDojoLocale(WidgetUtil.validateLocale(request.getLocale().getLanguage()));
+    }
+
+    /**
+     *
+     * @param locale
+     * @return
+     */
+    public static Locale parseLocale(String locale) {
+        String[] parts = locale.split("_");
+        if (parts.length > 1) {
+            switch (parts.length) {
+                case 3: return new Locale(parts[0], parts[1], parts[2]);
+                case 2: return new Locale(parts[0], parts[1]);
+                case 1: return new Locale(parts[0]);
+                default: throw new IllegalArgumentException("Invalid locale: " + locale);
+            }
+        } else {
+            throw new IllegalArgumentException("Invalid locale: " + locale);
+        }
+    }
+
+    public static boolean isValid(Locale locale) {
+        try {
+            return locale.getISO3Language() != null && locale.getISO3Country() != null;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public static Locale toLocale(final String language) {
+        try {
+            final Locale locale = parseLocale(language);
+            return locale;
+        } catch (Exception e) {
+            return new Locale("en", "US");
+        }
+    }
+
+    /**
+     *
+     * @param language
+     * @return
+     */
+    public static String validateLocale(final String language) {
+        try {
+            final Locale locale = parseLocale(language);
+            return locale.toString();
+        } catch (Exception e) {
+            return new Locale("en", "US").toString();
+        }
+    }
+
+    /**
+     *
+     * @param language
+     * @return
+     */
+    public static String convertToDojoLocale(final String language) {
+            final String lang = WidgetUtil.validateLocale(language);
+            return lang.replace("_", "-").toLowerCase().toString();
     }
 
     /**
@@ -89,6 +163,8 @@ public class WidgetUtil {
                         EnMePlaceHolderConfigurer.getProperty("short.google.key"));
             } else if (provider.equals(ShortUrlProvider.NONE)) {
                 urlShort = url;
+            } else if (provider.equals(ShortUrlProvider.YOURLS)) {
+                urlShort = SocialUtils.getYourls(url);
             } else if (provider.equals(ShortUrlProvider.TINYURL)) {
                 urlShort = SocialUtils.getTinyUrl(url);
             } else if (provider.equals(ShortUrlProvider.BITLY)) {
@@ -108,7 +184,43 @@ public class WidgetUtil {
      * @return
      */
     public static final String getDomain(final HttpServletRequest request) {
+        //FIXME: and HTTPS?
         final StringBuffer domain = new StringBuffer(WidgetUtil.URL);
+        domain.append(request.getServerName());
+        if (request.getServerPort() != WidgetUtil.REQUEST_SERVER_PORT) {
+            domain.append(":");
+            domain.append(request.getServerPort());
+        }
+        // buffer.append("//");
+        domain.append(request.getContextPath());
+        return domain.toString();
+    }
+
+    /**
+     *
+     * @param request
+     * @return
+     */
+    public static final String getRelativeDomain(final HttpServletRequest request) {
+        //FIXME: and HTTPS?
+        final StringBuffer domain = new StringBuffer();
+        domain.append(request.getServerName());
+        if (request.getServerPort() != WidgetUtil.REQUEST_SERVER_PORT) {
+            domain.append(":");
+            domain.append(request.getServerPort());
+        }
+        domain.append(request.getContextPath());
+        return domain.toString();
+    }
+
+    /**
+     *
+     * @param request
+     * @param addHttp
+     * @return
+     */
+    public static final String getDomain(final HttpServletRequest request, final Boolean addHttp) {
+        final StringBuffer domain = new StringBuffer(addHttp ? WidgetUtil.URL : "");
         domain.append(request.getServerName());
         if (request.getServerPort() != WidgetUtil.REQUEST_SERVER_PORT) {
             domain.append(":");

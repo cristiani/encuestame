@@ -41,6 +41,7 @@ import org.encuestame.utils.web.UnitLocationFolder;
 import org.encuestame.utils.web.UnitLocationTypeBean; 
 import org.encuestame.utils.web.geo.ItemGeoLocationBean; 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Location Service.
@@ -48,6 +49,7 @@ import org.springframework.stereotype.Service;
  * @since May 15, 2010 8:17:15 PM
  */
 @Service
+@Transactional
 public class GeoLocationService extends AbstractBaseService implements GeoLocationSupport{
 
     /** Log. **/
@@ -513,7 +515,7 @@ public class GeoLocationService extends AbstractBaseService implements GeoLocati
 					objects[3].toString(), (Double) objects[4]);
 			itemsGeoBeanList.add(itemGeoBean);
 		}
-		// TODO: It«s necessary to sort by distance
+		// TODO: It's necessary to sort by distance
 		return itemsGeoBeanList; 
 	}
 	

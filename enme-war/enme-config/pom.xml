@@ -4,11 +4,11 @@
     <parent>
         <groupId>org.encuestame</groupId>
         <artifactId>encuestame-war</artifactId>
-        <version>1.147-M2-SNAPSHOT</version>
+        <version>1.5.3-SNAPSHOT</version>
     </parent>
     <artifactId>enme-config</artifactId>
     <packaging>war</packaging>
-    <name>encuestame configuration war</name>
+    <name>Encuestame Webapp Configuration</name>
     <build>
         <filters>
             <filter>../../env/${env}.properties</filter>

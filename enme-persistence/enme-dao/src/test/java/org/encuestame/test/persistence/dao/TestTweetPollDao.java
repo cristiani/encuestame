@@ -26,8 +26,10 @@ import java.util.List;
 
 import org.encuestame.persistence.dao.imp.TweetPollDao;
 import org.encuestame.persistence.domain.HashTag;
+import org.encuestame.persistence.domain.Schedule;
 import org.encuestame.persistence.domain.question.Question;
 import org.encuestame.persistence.domain.question.QuestionAnswer;
+import org.encuestame.persistence.domain.security.Account;
 import org.encuestame.persistence.domain.security.SocialAccount;
 import org.encuestame.persistence.domain.security.UserAccount;
 import org.encuestame.persistence.domain.tweetpoll.TweetPoll;
@@ -41,14 +43,12 @@ import org.encuestame.utils.DateUtil;
 import org.encuestame.utils.categories.test.DefaultTest;
 import org.encuestame.utils.enums.RelativeTimeEnum;
 import org.encuestame.utils.enums.SearchPeriods;
+import org.encuestame.utils.enums.Status;
 import org.encuestame.utils.enums.TypeSearchResult;
 import org.encuestame.utils.social.SocialProvider;
-import org.encuestame.utils.web.stats.HashTagDetailStats;
-import org.encuestame.utils.web.stats.ItemStatDetail;
 import org.joda.time.DateTime;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -96,15 +96,28 @@ public class TestTweetPollDao extends AbstractBase {
     private Boolean defaultFalseValue = Boolean.FALSE;
 
     /**
+     * {@link Account}
+     */
+    private Account account;
+
+    /**
+     *
+     */
+    private DateTime initDate = new DateTime();
+
+    private SocialAccount socialAccount;
+
+    /**
      * Before.
      */
     @Before
     public void initData() {
-        this.secondary = createUserAccount("jhonny", createAccount());
+        this.account = createAccount();
+        this.secondary = createUserAccount("jhonny", account);
         this.question = createQuestion("Who I am?", "");
         this.questionsAnswers1 = createQuestionAnswer("yes", question, "12345");
         this.questionsAnswers2 = createQuestionAnswer("no", question, "12346");
-        this.tweetPoll = createPublishedTweetPoll(secondary.getAccount(),
+        this.tweetPoll = createPublishedTweetPoll(secondary,
                 this.question);
         final DateTime dt = new DateTime();
         final DateTime minusDate = dt.minusDays(3);
@@ -124,6 +137,7 @@ public class TestTweetPollDao extends AbstractBase {
         this.tweetPollFolder = createTweetPollFolder("First TweetPoll Folder",
                 secondary);
         tweetPoll.setNumbervotes(65L);
+        this.socialAccount = createDefaultSettedSocialAccount(this.secondary);
     }
 
     /**
@@ -131,7 +145,6 @@ public class TestTweetPollDao extends AbstractBase {
      */
     @Test
     public void testRetrieveTweetsPollSwitch() {
-        // System.out.println("----------");
         final TweetPollSwitch pollSwitch = getTweetPoll()
                 .retrieveTweetsPollSwitch(this.pollSwitch1.getCodeTweet());
         assertNotNull(pollSwitch);
@@ -177,7 +190,7 @@ public class TestTweetPollDao extends AbstractBase {
         final QuestionAnswer qaEurope = createQuestionAnswer("Europa",
                 myQuestion, "123469");
         final TweetPoll myTweetPoll = createPublishedTweetPoll(
-                secondary.getAccount(), myQuestion);
+                secondary, myQuestion);
         HashTag htCitizen = createHashTag("citizen");
         HashTag htCitizenShip = createHashTag("citizenship");
         myTweetPoll.getHashTags().add(htCitizen);
@@ -313,8 +326,7 @@ public class TestTweetPollDao extends AbstractBase {
         assertNotNull(tweetPoll);
         final Long userId = this.secondary.getAccount().getUid();
         final String peri = "7";
-         final List<TweetPoll> tweets = getTweetPoll().retrieveTweetsByUserId(" ", userId, 10, 0,  Boolean.TRUE,  Boolean.TRUE,  Boolean.TRUE,  Boolean.TRUE, peri);
-        System.out.println("Should be equals ---> " +tweets.size());
+        final List<TweetPoll> tweets = getTweetPoll().retrieveTweetsByUserId(" ", userId, 10, 0,  Boolean.TRUE,  Boolean.TRUE,  Boolean.TRUE,  Boolean.TRUE, peri);
         assertEquals("Should be equals", 1, tweets.size());
     }
 
@@ -338,61 +350,61 @@ public class TestTweetPollDao extends AbstractBase {
 
         // Completed - Favourites - Scheduled - Published
         this.createTweetPollItems(creationDate.toDate(),
-                this.secondary.getAccount(), Boolean.TRUE, Boolean.FALSE,
+                this.secondary, Boolean.TRUE, Boolean.FALSE,
                 Boolean.FALSE, Boolean.TRUE);
 
         this.createTweetPollItems(creationDate.toDate(),
-                this.secondary.getAccount(), Boolean.TRUE, Boolean.FALSE,
+                this.secondary, Boolean.TRUE, Boolean.FALSE,
                 Boolean.FALSE, Boolean.TRUE);
 
         this.createTweetPollItems(creationDate.toDate(),
-                this.secondary.getAccount(), Boolean.TRUE, Boolean.FALSE,
+                this.secondary, Boolean.TRUE, Boolean.FALSE,
                 Boolean.TRUE, Boolean.TRUE);
 
         this.createTweetPollItems(creationDate.toDate(),
-                this.secondary.getAccount(), Boolean.FALSE, Boolean.FALSE,
+                this.secondary, Boolean.FALSE, Boolean.FALSE,
                 Boolean.FALSE, Boolean.FALSE);
 
         // 24 hours
         creationDate = creationDate.minusDays(3);
         this.createTweetPollItems(creationDate.toDate(),
-                this.secondary.getAccount(), Boolean.FALSE, Boolean.FALSE,
+                this.secondary, Boolean.FALSE, Boolean.FALSE,
                 Boolean.FALSE, Boolean.TRUE);
 
         this.createTweetPollItems(creationDate.toDate(),
-                this.secondary.getAccount(), Boolean.TRUE, Boolean.FALSE,
+                this.secondary, Boolean.TRUE, Boolean.FALSE,
                 Boolean.FALSE, Boolean.FALSE);
 
         this.createTweetPollItems(creationDate.toDate(),
-                this.secondary.getAccount(), Boolean.TRUE, Boolean.FALSE,
+                this.secondary, Boolean.TRUE, Boolean.FALSE,
                 Boolean.FALSE, Boolean.FALSE);
 
         creationDate = creationDate.minusDays(2);
 
         this.createTweetPollItems(creationDate.toDate(),
-                this.secondary.getAccount(), Boolean.TRUE, Boolean.FALSE,
+                this.secondary, Boolean.TRUE, Boolean.FALSE,
                 Boolean.FALSE, Boolean.FALSE);
 
         this.createTweetPollItems(creationDate.toDate(),
-                this.secondary.getAccount(), Boolean.TRUE, Boolean.FALSE,
+                this.secondary, Boolean.TRUE, Boolean.FALSE,
                 Boolean.FALSE, Boolean.FALSE);
 
         this.createTweetPollItems(creationDate.toDate(),
-                this.secondary.getAccount(), Boolean.TRUE, Boolean.FALSE,
+                this.secondary, Boolean.TRUE, Boolean.FALSE,
                 Boolean.FALSE, Boolean.FALSE);
 
         this.createTweetPollItems(creationDate.toDate(),
-                this.secondary.getAccount(), Boolean.TRUE, Boolean.FALSE,
+                this.secondary, Boolean.TRUE, Boolean.FALSE,
                 Boolean.FALSE, Boolean.FALSE);
 
         creationDate = creationDate.minusDays(4);
 
         this.createTweetPollItems(creationDate.toDate(),
-                this.secondary.getAccount(), Boolean.TRUE, Boolean.FALSE,
+                this.secondary, Boolean.TRUE, Boolean.FALSE,
                 Boolean.FALSE, Boolean.FALSE);
 
         this.createTweetPollItems(creationDate.toDate(),
-                this.secondary.getAccount(), Boolean.TRUE, Boolean.FALSE,
+                this.secondary, Boolean.TRUE, Boolean.FALSE,
                 Boolean.FALSE, Boolean.FALSE);
 
         // Search Tweetpolls by keyword - Period 24
@@ -419,7 +431,7 @@ public class TestTweetPollDao extends AbstractBase {
 
         // Compeleted - Favourite - Scheduled -Published.
         final TweetPoll tp2 =   createTweetPollItems(new Date(),
-                this.secondary.getAccount(), Boolean.TRUE, Boolean.FALSE,
+                this.secondary, Boolean.TRUE, Boolean.FALSE,
                 Boolean.FALSE, Boolean.TRUE);
 
         // Completed - Scheduled - Favourite - Published
@@ -442,7 +454,7 @@ public class TestTweetPollDao extends AbstractBase {
         final DateTime dtplus =dt.plusMinutes(5);
 
         // Completed - Favourites - Scheduled - Published
-        final TweetPoll tp =  createTweetPollItems(dtplus.toDate(), this.secondary.getAccount(), Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, Boolean.FALSE);
+        final TweetPoll tp =  createTweetPollItems(dtplus.toDate(), this.secondary, Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, Boolean.FALSE);
 
         // Completed - Scheduled - Favourite - Published
         final List<TweetPoll> tweetsByDate = getTweetPoll()
@@ -450,19 +462,6 @@ public class TestTweetPollDao extends AbstractBase {
                         defaultFalseValue, defaultFalseValue, defaultFalseValue,
                         defaultFalseValue, null, "30", new Date());
         assertEquals("Should be equals", 1, tweetsByDate.size());
-    }
-
-    /**
-     * Test Retrieve TweetPoll Last Week
-     */
-    @Test
-    public void testRetrieveFavouritesTweetPoll() {
-        assertNotNull(this.secondary);
-        assertNotNull(tweetPoll);
-        // final List<TweetPoll> favouritesTweets =
-        // getTweetPoll().retrieveFavouritesTweetPoll(this.secondary.getAccount(),
-        // 5, 0);
-        // assertEquals("Should be equals", 1, favouritesTweets.size());
     }
 
     /**
@@ -479,7 +478,7 @@ public class TestTweetPollDao extends AbstractBase {
         final DateTime dt = new DateTime();
 
         final TweetPoll tp = createTweetPollItems(dt.toDate(),
-                this.secondary.getAccount(), this.defaultFalseValue,
+                this.secondary, this.defaultFalseValue,
                 this.defaultFalseValue, Boolean.TRUE, Boolean.TRUE);
         tp.setCreateDate(dt.minusDays(1091).toDate());
         getTweetPoll().saveOrUpdate(tp);
@@ -506,7 +505,7 @@ public class TestTweetPollDao extends AbstractBase {
         final DateTime dt = new DateTime();
         final TweetPoll tp = createTweetPollItems(
                 dt.toDate(),
-                this.secondary.getAccount(),
+                this.secondary,
                 this.defaultFalseValue, //is completed
                 Boolean.TRUE, //is favorite
                 Boolean.TRUE,
@@ -516,7 +515,7 @@ public class TestTweetPollDao extends AbstractBase {
 
         final TweetPoll tp2 = createTweetPollItems(
                 dt.minusDays(4).toDate(),
-                this.secondary.getAccount(),
+                this.secondary,
                 this.defaultFalseValue,
                 this.defaultFalseValue,
                 Boolean.TRUE,
@@ -613,12 +612,12 @@ public class TestTweetPollDao extends AbstractBase {
         this.tweetPoll.getHashTags().add(hashtag3);
         getTweetPoll().saveOrUpdate(this.tweetPoll);
         final TweetPoll tweetPoll1 = createPublishedTweetPoll(
-                secondary.getAccount(),
+                secondary,
                 createQuestion("question1", secondary.getAccount()),
                 calendar.getTime());
         tweetPoll1.getHashTags().add(this.hashTag1);
         final TweetPoll tweetPoll2 = createPublishedTweetPoll(
-                secondary.getAccount(),
+                secondary,
                 createQuestion("question2", secondary.getAccount()),
                 calendar2.getTime());
         tweetPoll2.getHashTags().add(this.hashTag1);
@@ -627,31 +626,19 @@ public class TestTweetPollDao extends AbstractBase {
         getTweetPoll().saveOrUpdate(tweetPoll2);
 
         final Calendar calendar3 = Calendar.getInstance();
-        // System.out.println("THIRD CALENDAR --> "+calendar3.getTime());
 
         final HashMap<Integer, RelativeTimeEnum> hm3 = DateUtil
                 .getRelativeTime(tweetPoll1.getCreateDate());
-        // System.out.println("HM 3 ---------->"+hm3);
 
         final List<TweetPoll> tweetPolls2 = getTweetPoll()
                 .getTweetpollByHashTagName(this.hashTag1.getHashTag(),
                         this.INIT_RESULTS, this.MAX_RESULTS,
                         TypeSearchResult.HASHTAG, SearchPeriods.ALLTIME);
-        // System.out.println("------------- HASH TAG NAME---------> " +
-        // this.hashTag1.getHashTag());
 
         final Calendar calendar4 = Calendar.getInstance();
-        // System.out.println(calendar.getTime());
 
         final HashMap<Integer, RelativeTimeEnum> hm4 = DateUtil
                 .getRelativeTime(tweetPoll2.getCreateDate());
-        // System.out.println("HM---------->"+hm4);
-
-        for (TweetPoll tweetPoll : tweetPolls2) {
-            // System.out.println(" TWITS BY HASHTAG --> " +
-            // tweetPoll.getQuestion().getQuestion() + "Published -->" +
-            // tweetPoll.getCreateDate());
-        }
         assertEquals("Should be equals", 3, tweetPolls2.size());
     }
 
@@ -665,24 +652,19 @@ public class TestTweetPollDao extends AbstractBase {
 
         getTweetPoll().saveOrUpdate(this.tweetPoll);
         final TweetPoll tweetPoll1 = createPublishedTweetPoll(
-                secondary.getAccount(),
+                secondary,
                 createQuestion("question1", secondary.getAccount()),
                 calendar.getTime());
         tweetPoll1.getHashTags().add(this.hashTag1);
 
         getTweetPoll().saveOrUpdate(tweetPoll1);
-        // System.out.println(" TP 1 -->" +tweetPoll1.getTweetPollId());
 
         final TweetPoll tweetPollsbyTag = getTweetPoll()
                 .checkIfTweetPollHasHashTag(this.hashTag1.getHashTag(),
                         SearchPeriods.ALLTIME, tweetPoll1.getTweetPollId());
 
-        // System.out.println(" TP Result 1 -->" +tweetPollsbyTag);
-
-        // SIN TP Correcto
-
         final TweetPoll tweetPoll2 = createPublishedTweetPoll(
-                secondary.getAccount(),
+                secondary,
                 createQuestion("question2", secondary.getAccount()),
                 calendar.getTime());
 
@@ -690,13 +672,10 @@ public class TestTweetPollDao extends AbstractBase {
         tweetPoll2.getHashTags().add(this.hashTag1);
 
         getTweetPoll().saveOrUpdate(tweetPoll2);
-        // System.out.println(" TP 2 -->" +tweetPoll2.getTweetPollId());
 
         final TweetPoll tweetPollsbyTag2 = getTweetPoll()
                 .checkIfTweetPollHasHashTag(this.hashTag1.getHashTag(),
                         SearchPeriods.ALLTIME, tweetPoll2.getTweetPollId());
-
-        // System.out.println(" TP RESULT 2 -->" +tweetPollsbyTag2);
     }
 
     @Test
@@ -714,7 +693,7 @@ public class TestTweetPollDao extends AbstractBase {
         getTweetPoll().saveOrUpdate(this.tweetPoll);
         // Publish tweetpoll
         final TweetPoll tweetPoll1 = createPublishedTweetPoll(
-                secondary.getAccount(),
+                secondary,
                 createQuestion("question1", secondary.getAccount()),
                 calendar.getTime());
         tweetPoll1.setNumbervotes(25L);
@@ -723,7 +702,7 @@ public class TestTweetPollDao extends AbstractBase {
         final Calendar calendar2 = Calendar.getInstance();
 
         final TweetPoll tweetPoll2 = createPublishedTweetPoll(
-                secondary.getAccount(),
+                secondary,
                 createQuestion("question2", secondary.getAccount()),
                 calendar2.getTime());
         tweetPoll2.setNumbervotes(45L);
@@ -759,13 +738,10 @@ public class TestTweetPollDao extends AbstractBase {
         final Calendar dateFrom = Calendar.getInstance();
         dateFrom.add(Calendar.DATE, -5);
 
-        // System.out.println("Date From -->"+ dateFrom.getTime() + " \n");
-        // System.out.println("Today date -->"+ todayDate.getTime() + " \n");
-
         // **** First tweetPoll **//
         this.secondary = createUserAccount("jhon", createAccount());
         final TweetPoll tweetPoll1 = createPublishedTweetPoll(
-                this.secondary.getAccount(),
+                this.secondary,
                 createQuestion("question1", secondary.getAccount()),
                 calendar1.getTime());
         tweetPoll1.setLikeVote(25L);
@@ -774,7 +750,7 @@ public class TestTweetPollDao extends AbstractBase {
 
         // **** Second tweetPoll **//
         final TweetPoll tweetPoll2 = createPublishedTweetPoll(
-                this.secondary.getAccount(),
+                this.secondary,
                 createQuestion("question2", secondary.getAccount()),
                 calendar2.getTime());
         tweetPoll2.setLikeVote(35L);
@@ -783,7 +759,7 @@ public class TestTweetPollDao extends AbstractBase {
 
         // **** Third tweetPoll **//
         final TweetPoll tweetPoll3 = createPublishedTweetPoll(
-                this.secondary.getAccount(),
+                this.secondary,
                 createQuestion("question3", secondary.getAccount()),
                 calendar3.getTime());
         tweetPoll3.setLikeVote(45L);
@@ -793,9 +769,7 @@ public class TestTweetPollDao extends AbstractBase {
         // Get Max value
         final Long maxValueLike = getTweetPoll()
                 .getMaxTweetPollLikeVotesbyUser(this.secondary.getUid());
-
-        // System.out.println("Max tweetPoll like vote : " + maxValueLike);
-        Assert.assertNotNull(maxValueLike);
+         Assert.assertNotNull(maxValueLike);
     }
 
     /**
@@ -820,7 +794,7 @@ public class TestTweetPollDao extends AbstractBase {
         // **** First tweetPoll **//
         this.secondary = createUserAccount("jhon", createAccount());
         final TweetPoll tweetPoll1 = createPublishedTweetPoll(
-                this.secondary.getAccount(),
+                this.secondary,
                 createQuestion("question1", secondary.getAccount()),
                 calendar1.getTime());
         tweetPoll1.setLikeVote(25L);
@@ -829,7 +803,7 @@ public class TestTweetPollDao extends AbstractBase {
 
         // **** Second tweetPoll **//
         final TweetPoll tweetPoll2 = createPublishedTweetPoll(
-                this.secondary.getAccount(),
+                this.secondary,
                 createQuestion("question2", secondary.getAccount()),
                 todayDate.getTime());
         tweetPoll2.setLikeVote(35L);
@@ -847,7 +821,7 @@ public class TestTweetPollDao extends AbstractBase {
     @Test
     public void testGetTotalSocialAccountsPublished() {
         final TweetPoll tp1 = createPublishedTweetPoll(
-                this.secondary.getAccount(),
+                this.secondary,
                 createQuestion("question1", secondary.getAccount()), new Date());
         assertNotNull(tp1);
         final SocialAccount socialAccount = createDefaultSettedSocialAccount(this.secondary);
@@ -874,7 +848,7 @@ public class TestTweetPollDao extends AbstractBase {
         assertNotNull(tp);
         final Long totalTweets = getTweetPoll().getTotalTweetPoll(
                 this.secondary, Boolean.TRUE);
-        Assert.assertEquals("Should be", 1, totalTweets.intValue());
+        Assert.assertEquals("Should be", 2, totalTweets.intValue());
     }
 
     /**
@@ -884,7 +858,7 @@ public class TestTweetPollDao extends AbstractBase {
     public void testGetTotalLinksByType() {
         // TweePoll 1
         final TweetPoll tweetPoll = createPublishedTweetPoll(
-                this.secondary.getAccount(),
+                this.secondary,
                 createQuestion("What is your favorite pastime?",
                         secondary.getAccount()), new Date());
         assertNotNull(tweetPoll);
@@ -923,14 +897,16 @@ public class TestTweetPollDao extends AbstractBase {
         final Question mySecondQuestion = createQuestion(
                 "What is your favorite kind of song?", secondary.getAccount());
         final TweetPoll tweetPoll = createPublishedTweetPoll(
-                this.secondary.getAccount(), myFirstQuestion,
+                this.secondary,
+                myFirstQuestion,
                 releaseDate.getTime());
         tweetPoll.getHashTags().add(myHashTag);
         getTweetPoll().saveOrUpdate(tweetPoll);
         assertNotNull(tweetPoll);
         releaseDate.add(Calendar.DATE, -4);
         final TweetPoll tweetPoll2 = createPublishedTweetPoll(
-                this.secondary.getAccount(), mySecondQuestion,
+                this.secondary,
+                mySecondQuestion,
                 releaseDate.getTime());
         tweetPoll2.getHashTags().add(myHashTag);
         getTweetPoll().saveOrUpdate(tweetPoll2);
@@ -951,7 +927,7 @@ public class TestTweetPollDao extends AbstractBase {
 
         // TweePoll 1
         final TweetPoll tweetPoll = createPublishedTweetPoll(
-                this.secondary.getAccount(),
+                this.secondary,
                 createQuestion("What is your favorite pastime?",
                         secondary.getAccount()), myCalendarDate.getTime());
         assertNotNull(tweetPoll);
@@ -974,11 +950,11 @@ public class TestTweetPollDao extends AbstractBase {
         tpSaved2.setPublicationDateTweet(myCalendarDate.getTime());
         getTweetPoll().saveOrUpdate(tpSaved2);
         assertNotNull(tpSaved2);
-        // final Long tweetPollSocialLinks = getTweetPoll()
-        // .getSocialLinksByTypeAndDateRange(tweetPoll, null, null,
-        // TypeSearchResult.TWEETPOLL, 365, 0, this.MAX_RESULTS);
-        // Assert.assertEquals("Should be", 2, tweetPollSocialLinks.intValue());
+        final List<TweetPollSavedPublishedStatus> tweetPollSocialLinks = getTweetPoll().getSocialLinksByTypeAndDateRange(tweetPoll, null, null,
+                TypeSearchResult.TWEETPOLL);
+        Assert.assertEquals("Should be", 2, tweetPollSocialLinks.size());
     }
+
 
     /**
      * Test finding the distance between two coordinate points.
@@ -987,7 +963,7 @@ public class TestTweetPollDao extends AbstractBase {
     public void testRetrieveTweetPollsBySearchRadiusOfGeoLocation() {
         final Calendar myCalendarDate = Calendar.getInstance();
         final TweetPoll tweetPoll = createPublishedTweetPoll(
-                this.secondary.getAccount(),
+                this.secondary,
                 createQuestion("What is your favorite pastime?",
                         secondary.getAccount()), myCalendarDate.getTime());
 
@@ -997,7 +973,7 @@ public class TestTweetPollDao extends AbstractBase {
         assertNotNull(tweetPoll);
 
         final TweetPoll tp1 = createPublishedTweetPoll(
-                this.secondary.getAccount(),
+                this.secondary,
                 createQuestion("What is your favorite movie?",
                         secondary.getAccount()), myCalendarDate.getTime());
 
@@ -1010,7 +986,7 @@ public class TestTweetPollDao extends AbstractBase {
         DateTime otherDate = new DateTime();
         final DateTime creationDate = otherDate.minusDays(9);
         final TweetPoll tp2 = createPublishedTweetPoll(
-                this.secondary.getAccount(),
+                this.secondary,
                 createQuestion("What is your favorite actor?",
                         secondary.getAccount()), myCalendarDate.getTime());
 
@@ -1027,15 +1003,6 @@ public class TestTweetPollDao extends AbstractBase {
                         longRadian, 510d, 6378, 10, TypeSearchResult.TWEETPOLL,
                         SearchPeriods.SEVENDAYS);
         Assert.assertEquals("Should be", 2, distanceFromOrigin.size());
-
-        /*
-         * for (Object[] objects : distanceFromOrigin) {
-         * System.out.println(" ------------------");
-         * System.out.println(" id values -->" + objects[0]);
-         * System.out.println(" distance values -->" + objects[1]);
-         *
-         * }
-         */
     }
 
     /**
@@ -1043,12 +1010,12 @@ public class TestTweetPollDao extends AbstractBase {
      */
     @Test
     public void testRetrievePublishedUnpublishedTweetPolls() {
-        createPublishedTweetPoll(secondary.getAccount(), this.question);
+        createPublishedTweetPoll(secondary, this.question);
         final List<TweetPoll> tweetPollsPublished = getTweetPoll()
                 .retrievePublishedUnpublishedTweetPoll(
                         this.secondary.getAccount(), 10, 0, Boolean.TRUE);
         Assert.assertEquals("Should be", 2, tweetPollsPublished.size());
-        createNotPublishedTweetPoll(secondary.getAccount(), this.question);
+        createNotPublishedTweetPoll(secondary, this.question);
         final List<TweetPoll> tweetPollsUnpublished = getTweetPoll()
                 .retrievePublishedUnpublishedTweetPoll(
                         this.secondary.getAccount(), 10, 0, Boolean.FALSE);
@@ -1059,21 +1026,18 @@ public class TestTweetPollDao extends AbstractBase {
      * Test Retrieve completed/incompleted tweetpolls.
      */
     @Test
-    @Ignore
     public void testRetrieveCompletedTweetPolls() {
-        createPublishedTweetPoll(secondary.getAccount(), this.question);
+        createPublishedTweetPoll(secondary, this.question);
         final List<TweetPoll> completedTweetpolls = getTweetPoll()
                 .retrieveCompletedTweetPoll(this.secondary.getAccount(), 10, 0,
                         Boolean.TRUE);
-        Assert.assertEquals("Should be", 2, completedTweetpolls.size());
+        Assert.assertEquals("Should be", 1, completedTweetpolls.size());
         final TweetPoll tpoll = createPublishedTweetPoll(
-                secondary.getAccount(), this.question);
-        tpoll.setCompleted(Boolean.FALSE);
-        getTweetPoll().saveOrUpdate(tpoll);
+                secondary, this.question);
         final List<TweetPoll> inCompletedTweetpolls = getTweetPoll()
                 .retrieveCompletedTweetPoll(this.secondary.getAccount(), 10, 0,
                         Boolean.FALSE);
-        Assert.assertEquals("Should be", 1, inCompletedTweetpolls.size());
+        Assert.assertEquals("Should be", 2, inCompletedTweetpolls.size());
     }
 
     /**
@@ -1084,23 +1048,23 @@ public class TestTweetPollDao extends AbstractBase {
         final DateTime time1 = new DateTime();
         final DateTime time2 = time1.minusDays(8);
         // published - completed - scheduled
-        createAdvancedTweetPoll(secondary.getAccount(),
+        createAdvancedTweetPoll(secondary,
                 createDefaultQuestion("cabeza"), Boolean.TRUE, Boolean.TRUE,
                 Boolean.FALSE, new Date());
 
-        createAdvancedTweetPoll(secondary.getAccount(),
+        createAdvancedTweetPoll(secondary,
                 createDefaultQuestion("cara"), Boolean.TRUE, Boolean.TRUE,
                 Boolean.FALSE, new Date());
-        createAdvancedTweetPoll(secondary.getAccount(),
+        createAdvancedTweetPoll(secondary,
                 createDefaultQuestion("pelo"), Boolean.FALSE, Boolean.FALSE,
                 Boolean.FALSE, time2.toDate());
-        createAdvancedTweetPoll(secondary.getAccount(),
+        createAdvancedTweetPoll(secondary,
                 createDefaultQuestion("cana"), Boolean.TRUE, Boolean.TRUE,
                 Boolean.FALSE, new Date());
-        createAdvancedTweetPoll(secondary.getAccount(),
+        createAdvancedTweetPoll(secondary,
                 createDefaultQuestion("lentes"), Boolean.FALSE, Boolean.TRUE,
                 Boolean.FALSE, new Date());
-        createAdvancedTweetPoll(secondary.getAccount(),
+        createAdvancedTweetPoll(secondary,
                 createDefaultQuestion("dientes"), Boolean.TRUE, Boolean.FALSE,
                 Boolean.FALSE, time2.toDate());
 
@@ -1110,14 +1074,14 @@ public class TestTweetPollDao extends AbstractBase {
                 this.secondary.getAccount(), 0, 10, 7, "ca");
         Assert.assertEquals("Should be", 3, search1.size());
 
-        createAdvancedTweetPoll(secondary.getAccount(),
+        createAdvancedTweetPoll(secondary,
                 createDefaultQuestion("nariz"), Boolean.TRUE, Boolean.TRUE,
                 Boolean.TRUE, new Date());
-        createAdvancedTweetPoll(secondary.getAccount(),
+        createAdvancedTweetPoll(secondary,
                 createDefaultQuestion("dedos"), Boolean.TRUE, Boolean.FALSE,
                 Boolean.FALSE, new Date());
 
-        final TweetPoll tp = createAdvancedTweetPoll(secondary.getAccount(),
+        final TweetPoll tp = createAdvancedTweetPoll(secondary,
                 createDefaultQuestion("boca"), Boolean.TRUE, Boolean.FALSE,
                 Boolean.FALSE, time2.toDate());
         tp.setFavourites(Boolean.FALSE);
@@ -1127,8 +1091,6 @@ public class TestTweetPollDao extends AbstractBase {
                 Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE,
                 this.secondary.getAccount(), 0, 10, 30, "b");
         Assert.assertEquals("Should be", 1, search2.size());
-
-    //    System.out.println("\n");
 
         final List<TweetPoll> search3 = getTweetPoll().advancedSearch(
                 Boolean.TRUE, Boolean.FALSE, Boolean.TRUE, Boolean.FALSE,
@@ -1143,7 +1105,7 @@ public class TestTweetPollDao extends AbstractBase {
 
         // TweePoll 1
         final TweetPoll tweetPoll = createPublishedTweetPoll(
-                this.secondary.getAccount(),
+                this.secondary,
                 createQuestion("What is your favorite pastime 11?",
                         secondary.getAccount()), new Date());
         assertNotNull(tweetPoll);
@@ -1192,6 +1154,9 @@ public class TestTweetPollDao extends AbstractBase {
 
     }
 
+    /**
+     *
+     */
     @Test
     public void testTpollsByHashTagNameAndDateRange() {
         final HashTag myHashTag = createHashTag("preferences");
@@ -1201,110 +1166,219 @@ public class TestTweetPollDao extends AbstractBase {
                 "What is your favorite kind of movie?", secondary.getAccount());
         final Question mySecondQuestion = createQuestion(
                 "What is your favorite kind of song?", secondary.getAccount());
-      // FIRST TP
+
+        // FIRST TP
         final TweetPoll tweetPoll = createPublishedTweetPoll(
-                this.secondary.getAccount(), myFirstQuestion,
+                this.secondary, myFirstQuestion,
                 releaseDate.getTime());
         tweetPoll.getHashTags().add(myHashTag);
         getTweetPoll().saveOrUpdate(tweetPoll);
         assertNotNull(tweetPoll);
 
-
+         //SECOND TP
         releaseDate.add(Calendar.HOUR, -1);
-
-        // SECOND TP
         final TweetPoll tweetPoll2 = createPublishedTweetPoll(
-                this.secondary.getAccount(), mySecondQuestion,
+                this.secondary, mySecondQuestion,
                 releaseDate.getTime());
         tweetPoll2.getHashTags().add(myHashTag);
         getTweetPoll().saveOrUpdate(tweetPoll2);
         assertNotNull(tweetPoll2);
 
         // THIRD TP
+        releaseDate.add(Calendar.HOUR, -4);
         final TweetPoll tweetPoll3 = createPublishedTweetPoll(
-                this.secondary.getAccount(), mySecondQuestion,
+                this.secondary, mySecondQuestion,
                 releaseDate.getTime());
         tweetPoll3.getHashTags().add(myHashTag);
         getTweetPoll().saveOrUpdate(tweetPoll3);
         assertNotNull(tweetPoll3);
 
-        // FOURTH TP
-        releaseDate.add(Calendar.DATE, -1);
+//        // FOURTH TP
+        releaseDate.add(Calendar.DATE, -7);
         releaseDate.add(Calendar.HOUR, -5);
         final TweetPoll tweetPoll4 = createPublishedTweetPoll(
-                this.secondary.getAccount(), mySecondQuestion,
+                this.secondary, mySecondQuestion,
                 releaseDate.getTime());
         tweetPoll4.getHashTags().add(myHashTag);
         getTweetPoll().saveOrUpdate(tweetPoll4);
         assertNotNull(tweetPoll4);
 
         // FIFTH
+        releaseDate.add(Calendar.WEEK_OF_MONTH, -7);
         final TweetPoll tweetPoll5 = createPublishedTweetPoll(
-                this.secondary.getAccount(), mySecondQuestion,
+                this.secondary, mySecondQuestion,
                 releaseDate.getTime());
         tweetPoll5.getHashTags().add(myHashTag);
         getTweetPoll().saveOrUpdate(tweetPoll5);
         assertNotNull(tweetPoll5);
 
         // SIXTH
-        releaseDate.add(Calendar.HOUR, -1);
+        releaseDate.add(Calendar.YEAR, -1);
         final TweetPoll tweetPoll6 = createPublishedTweetPoll(
-                this.secondary.getAccount(), mySecondQuestion,
+                this.secondary, mySecondQuestion,
                 releaseDate.getTime());
         tweetPoll6.getHashTags().add(myHashTag);
         getTweetPoll().saveOrUpdate(tweetPoll6);
         assertNotNull(tweetPoll6);
 
         // SEVENTH
+        releaseDate.add(Calendar.YEAR, -2);
         final TweetPoll tweetPoll7 = createPublishedTweetPoll(
-                this.secondary.getAccount(), mySecondQuestion,
+                this.secondary, mySecondQuestion,
                 releaseDate.getTime());
         tweetPoll7.getHashTags().add(myHashTag);
         getTweetPoll().saveOrUpdate(tweetPoll7);
         assertNotNull(tweetPoll7);
 
-        final List<Object[]> tweetPollsbyHashTag = getTweetPoll()
-                .getTweetPollsRangeStats(myHashTag.getHashTag(),
-                        SearchPeriods.SEVENDAYS);
+        List<Object[]> tweetPollsbyHashTag = null;
 
+        tweetPollsbyHashTag = getTweetPoll()
+                .getTweetPollsRangeStats(myHashTag.getHashTag(), SearchPeriods.ALLTIME);
+        Assert.assertEquals("Should be", 6, tweetPollsbyHashTag.size());
 
-       // Assert.assertEquals("Should be", 2, tweetPollsbyHashTag.size());
+        tweetPollsbyHashTag = getTweetPoll()
+                 .getTweetPollsRangeStats(myHashTag.getHashTag(),
+                         SearchPeriods.TWENTYFOURHOURS);
+        Assert.assertEquals("Should be", 3, tweetPollsbyHashTag.size());
+
+       tweetPollsbyHashTag = getTweetPoll()
+              .getTweetPollsRangeStats(myHashTag.getHashTag(),
+                      SearchPeriods.THIRTYDAYS);
+       Assert.assertEquals("Should be", 4, tweetPollsbyHashTag.size());
+
+       tweetPollsbyHashTag = getTweetPoll()
+               .getTweetPollsRangeStats(myHashTag.getHashTag(),
+                       SearchPeriods.ONEYEAR);
+       Assert.assertEquals("Should be", 5, tweetPollsbyHashTag.size());
     }
 
+    /**
+     * Test Remove {@link TweetPoll}.
+     */
     @Test
     public void testTweetRemove(){
 
-		final Question myFirstQuestion = createQuestion(
-				"What is your favorite kind of movie?", secondary.getAccount());
-		final Question mySecondQuestion = createQuestion(
-				"What is your favorite kind of song?", secondary.getAccount());
+        final Question myFirstQuestion = createQuestion(
+                "What is your favorite kind of movie?", secondary.getAccount());
+        final Question mySecondQuestion = createQuestion(
+                "What is your favorite kind of song?", secondary.getAccount());
 
-		final TweetPollFolder tpFolder = createTweetPollFolder("My Tp1 folder", this.secondary);
-		// FIRST TP
-		final TweetPoll tweetPoll = createPublishedTweetPoll(
-				this.secondary.getAccount(), myFirstQuestion,
-				new Date());
-		tweetPoll.setTweetPollFolder(tpFolder);
-		getTweetPoll().saveOrUpdate(tweetPoll);
+        final TweetPollFolder tpFolder = createTweetPollFolder("My Tp1 folder", this.secondary);
+        // FIRST TP
+        final TweetPoll tweetPoll = createPublishedTweetPoll(
+                this.secondary, myFirstQuestion,
+                new Date());
+        tweetPoll.setTweetPollFolder(tpFolder);
+        getTweetPoll().saveOrUpdate(tweetPoll);
 
-		getTweetPoll().delete(tweetPoll);
-		final TweetPoll tp = getTweetPoll().getTweetPollById(
-				tweetPoll.getTweetPollId());
-		final Question quest = getQuestionDaoImp().retrieveQuestionById(
-				myFirstQuestion.getQid());
-		final Question quest2 = getQuestionDaoImp().retrieveQuestionById(
-				mySecondQuestion.getQid());
-		final List<TweetPoll> tpollsbyFolder = getTweetPoll()
-				.retrieveTweetPollByFolder(this.secondary.getUid(),
-						tpFolder.getId());
+        getTweetPoll().delete(tweetPoll);
+        final TweetPoll tp = getTweetPoll().getTweetPollById(
+                tweetPoll.getTweetPollId());
+        final Question quest = getQuestionDaoImp().retrieveQuestionById(
+                myFirstQuestion.getQid());
+        final Question quest2 = getQuestionDaoImp().retrieveQuestionById(
+                mySecondQuestion.getQid());
+        final List<TweetPoll> tpollsbyFolder = getTweetPoll()
+                .retrieveTweetPollByFolder(this.secondary.getUid(),
+                        tpFolder.getId());
 
-		final TweetPollFolder folders = getTweetPoll().getTweetPollFolderById(
-				tpFolder.getId());
+        final TweetPollFolder folders = getTweetPoll().getTweetPollFolderById(
+                tpFolder.getId());
+     }
+
+    /**
+     * Test retrieve Favourites tweetpoll.
+     */
+    @Test
+    public void testRetrieveFavouritesTweetPoll(){
+        createDefaultTweetPollPublicated(Boolean.TRUE,
+                Boolean.TRUE, Boolean.TRUE, this.secondary, this.question,
+                this.initDate.toDate());
+
+        final Question newQuest = createQuestion("Favorite color?", this.account);
+
+        createDefaultTweetPollPublicated(Boolean.TRUE,
+                Boolean.TRUE, Boolean.TRUE, this.secondary, newQuest,
+                this.initDate.minusDays(5).toDate());
 
 
-	//	System.out.println(" \n Tweetpoll Folder  " + tpollsbyFolder.size());
-	//	System.out.println(" \n  Folder  " + folders.getId());
-	//	System.out.println(" \n Question After " + quest.getQuestion());
+        final List<TweetPoll> tpolls = getTweetPoll()
+                .retrieveFavouritesTweetPoll(this.account, 10, 0, Boolean.TRUE,
+                        Boolean.FALSE, Boolean.TRUE, Boolean.TRUE, "", "24");
 
+
+        final List<TweetPoll> tpolls2 = getTweetPoll()
+                .retrieveFavouritesTweetPoll(this.account, 10, 0, Boolean.TRUE,
+                        Boolean.FALSE, Boolean.TRUE, Boolean.TRUE, "Who", " ");
+
+        final List<TweetPoll> tpolls3 = getTweetPoll()
+                .retrieveFavouritesTweetPoll(this.account, 10, 0, Boolean.TRUE,
+                        Boolean.FALSE, Boolean.TRUE, Boolean.TRUE, "col", " ");
+
+
+        Assert.assertEquals("Should be", 3, tpolls.size());
+        Assert.assertEquals("Should be", 2, tpolls2.size());
+        Assert.assertEquals("Should be", 1, tpolls3.size());
+     }
+
+    /**
+     * Test
+     */
+    public void testGetListAnswerTweetSwitch(){
+//    	final QuestionAnswer qAnsw =
+//    	final List<TweetPollSwitch> getListAnswers = getTweetPoll().getAnswerTweetSwitch(questionAnswer);
+    }
+
+
+    /**
+     * Test to retrieve all scheduled items.
+     */
+    @Test
+    public void testScheduledItems(){
+
+    final SocialAccount socialAcc2 = createDefaultSettedSocialAccount(this.secondary);
+
+    // Create Tweetpoll
+    final TweetPoll tpoll = createDefaultTweetPollPublicated(Boolean.TRUE,
+            Boolean.TRUE, Boolean.TRUE, this.secondary, this.question,
+            this.initDate.toDate());
+    final DateTime secondDate = new DateTime();
+    // Create Scheduled items
+
+    createTweetpollSchedule(tpoll, secondDate.toDate(), socialAcc2, Status.FAILED, TypeSearchResult.TWEETPOLL);
+    createTweetpollSchedule(tpoll, secondDate.minusDays(2).toDate(), socialAcc2, Status.FAILED, TypeSearchResult.TWEETPOLL);
+
+    createTweetpollSchedule(tpoll, secondDate.minusDays(3).toDate(), socialAcc2, Status.FAILED, TypeSearchResult.TWEETPOLL);
+
+    createTweetpollSchedule(tpoll, secondDate.plusDays(1).toDate(), socialAcc2, Status.FAILED, TypeSearchResult.TWEETPOLL);
+    createTweetpollSchedule(tpoll, secondDate.minusDays(7).toDate(), socialAcc2, Status.FAILED, TypeSearchResult.TWEETPOLL);
+    //
+    final Date minimumDate = getScheduleDao().retrieveMinimumScheduledDate(Status.FAILED);
+
+    // Retrieve Scheduled items with Status FAILED
+    final List<Schedule> allScheduled = getScheduleDao().retrieveScheduled(Status.FAILED, minimumDate);
+
+    Assert.assertEquals("Should be", 4, allScheduled.size());
+    }
+
+    /**
+     * Retrieve items to remove
+     */
+    @Test
+    public void testRetrieveFailedScheduledItems(){
+
+        createTweetpollScheduleDefault(this.tweetPoll, this.initDate.toDate(),
+                this.socialAccount, Status.SUCCESS, TypeSearchResult.TWEETPOLL,
+                1);
+        createTweetpollScheduleDefault(this.tweetPoll,
+                this.initDate.minusDays(2).toDate(), this.socialAccount,
+                Status.FAILED, TypeSearchResult.TWEETPOLL, 3);
+
+        createTweetpollScheduleDefault(this.tweetPoll, this.initDate.toDate(),
+                this.socialAccount, Status.FAILED, TypeSearchResult.TWEETPOLL,
+                5);
+
+        final List<Schedule> list = getScheduleDao().retrieveFailedScheduledItems(5, Status.SUCCESS);
+        Assert.assertEquals("Should be", 2, list.size());
     }
 }

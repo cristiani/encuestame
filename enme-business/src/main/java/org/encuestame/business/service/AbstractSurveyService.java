@@ -20,6 +20,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -32,8 +33,10 @@ import org.encuestame.core.security.util.WidgetUtil;
 import org.encuestame.core.util.ConvertDomainBean;
 import org.encuestame.core.util.InternetUtils;
 import org.encuestame.persistence.dao.IHashTagDao;
+import org.encuestame.persistence.dao.IScheduled;
 import org.encuestame.persistence.dao.ITweetPoll;
 import org.encuestame.persistence.domain.HashTag;
+import org.encuestame.persistence.domain.Schedule;
 import org.encuestame.persistence.domain.question.Question;
 import org.encuestame.persistence.domain.question.QuestionAnswer;
 import org.encuestame.persistence.domain.security.SocialAccount;
@@ -43,16 +46,20 @@ import org.encuestame.persistence.domain.tweetpoll.TweetPollResult;
 import org.encuestame.persistence.domain.tweetpoll.TweetPollSwitch;
 import org.encuestame.persistence.exception.EnMeExpcetion;
 import org.encuestame.persistence.exception.EnMeNoResultsFoundException;
-import org.encuestame.social.api.FacebookAPITemplate;
-import org.encuestame.social.api.GoogleBuzzAPITemplate;
-import org.encuestame.social.api.IdenticaAPITemplate;
-import org.encuestame.social.api.LinkedInAPITemplate;
-import org.encuestame.social.api.TwitterAPITemplate;
-import org.encuestame.social.api.support.BuzzAPIOperations;
-import org.encuestame.social.api.support.FacebookAPIOperations;
-import org.encuestame.social.api.support.IdenticaAPIOperations;
-import org.encuestame.social.api.support.LinkedInAPIOperations;
-import org.encuestame.social.api.support.TwitterAPIOperations;
+import org.encuestame.social.api.templates.FacebookAPITemplate;
+import org.encuestame.social.api.templates.GoogleBuzzAPITemplate;
+import org.encuestame.social.api.templates.IdenticaAPITemplate;
+import org.encuestame.social.api.templates.LinkedInAPITemplate;
+import org.encuestame.social.api.templates.PlurkAPITemplate;
+import org.encuestame.social.api.templates.TumblrAPITemplate;
+import org.encuestame.social.api.templates.TwitterAPITemplate;
+import org.encuestame.social.api.operation.BuzzAPIOperations;
+import org.encuestame.social.api.operation.FacebookAPIOperations;
+import org.encuestame.social.api.operation.IdenticaAPIOperations;
+import org.encuestame.social.api.operation.LinkedInAPIOperations;
+import org.encuestame.social.api.operation.PlurkAPIOperations;
+import org.encuestame.social.api.operation.TumblrAPIOperations;
+import org.encuestame.social.api.operation.TwitterAPIOperations;
 import org.encuestame.utils.MD5Utils;
 import org.encuestame.utils.PictureUtils;
 import org.encuestame.utils.RestFullUtil;
@@ -70,7 +77,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 
 import twitter4j.TwitterException;
-import twitter4j.http.RequestToken;
+import twitter4j.auth.RequestToken;
 
 /**
  * Survey Service.
@@ -99,6 +106,10 @@ public class AbstractSurveyService extends AbstractChartService {
 
     /** Tweet Path, **/
     private String tweetPath;
+
+    /** {@link Schedule} **/
+    @Autowired
+    private IScheduled scheduledDao;
 
     /**
      * Twee poll vote.
@@ -351,6 +362,7 @@ public class AbstractSurveyService extends AbstractChartService {
     public List<QuestionAnswerBean> retrieveAnswerByQuestionId(final Long questionId) {
         final List<QuestionAnswer> answers = this.getQuestionDao().getAnswersByQuestionId(questionId);
         log.debug("answers by question id ["+questionId+"] answers size:{"+answers.size());
+        //System.out.println("answers by question id ["+questionId+"] answers size:{"+answers.size());
         final List<QuestionAnswerBean> answersBean = new ArrayList<QuestionAnswerBean>();
         for (QuestionAnswer questionsAnswers : answers) {
             answersBean.add(ConvertDomainBean.convertAnswerToBean(questionsAnswers));
@@ -448,7 +460,7 @@ public class AbstractSurveyService extends AbstractChartService {
      * @return status of tweet
      * @throws EnMeExpcetion exception
      */
-    public TweetPublishedMetadata publicTweetPoll(final String tweetText, final SocialAccount socialAccount)
+    public TweetPublishedMetadata publicTweetPoll(final String tweetText, final SocialAccount socialAccount,  final Set<HashTag> hashtags)
            throws EnMeExpcetion {
         TweetPublishedMetadata published = new TweetPublishedMetadata();
         log.debug("publicTweetPoll:{ "+tweetText);
@@ -459,13 +471,10 @@ public class AbstractSurveyService extends AbstractChartService {
                     EnMePlaceHolderConfigurer.getProperty("twitter.oauth.consumerKey"),
                     socialAccount);
             try {
-//                log.debug("Publish on Twitter 1 ............>");
                 published = twitterAPIOperations.updateStatus(tweetText);
-//                log.debug("Publish on Twitter 2 ...... "+published);
-//                log.debug("Publish on Twitter 2 ...... "+published.getTweetId());
             } catch (Exception e) {
                 log.error(e);
-                e.printStackTrace();
+                //e.printStackTrace();
             }
         } else if (socialAccount.getAccounType().equals(SocialProvider.IDENTICA)) {
             log.debug("Publish on IDENTICA");
@@ -481,7 +490,39 @@ public class AbstractSurveyService extends AbstractChartService {
             } catch (Exception e) {
                 published.setDatePublished(Calendar.getInstance().getTime());
                 log.error(e);
-                e.printStackTrace();
+                ///e.printStackTrace();
+            }
+        } else if (socialAccount.getAccounType().equals(SocialProvider.PLURK)) {
+            log.debug("Publish on PLURK");
+            final PlurkAPIOperations tumblrAPIOperations = new PlurkAPITemplate(
+                    EnMePlaceHolderConfigurer.getProperty("plurk.consumer.key"),
+                    EnMePlaceHolderConfigurer.getProperty("plurk.consumer.secret"),
+                    socialAccount.getAccessToken(),
+                    socialAccount.getSecretToken());
+            try {
+                log.debug("Publish on Identica............>");
+                published = tumblrAPIOperations.updateStatus(tweetText);
+                log.debug("Publish on Identica...... "+published);
+            } catch (Exception e) {
+                published.setDatePublished(Calendar.getInstance().getTime());
+                log.error(e);
+                //e.printStackTrace();
+            }                    
+        } else if (socialAccount.getAccounType().equals(SocialProvider.TUMBLR)) {
+            log.debug("Publish on TUMBLR");
+            final TumblrAPIOperations tumblrAPIOperations = new TumblrAPITemplate(
+                    EnMePlaceHolderConfigurer.getProperty("tumblr.consumer.key"),
+                    EnMePlaceHolderConfigurer.getProperty("tumblr.consumer.secret"),
+                    socialAccount.getAccessToken(),
+                    socialAccount.getSecretToken());
+            try {
+                log.debug("Publish on TUMBLR............>");
+                published = tumblrAPIOperations.updateStatus(tweetText, socialAccount, hashtags);
+                log.debug("Publish on TUMBLR...... "+published);
+            } catch (Exception e) {
+                published.setDatePublished(Calendar.getInstance().getTime());
+                log.error(e);
+                //e.printStackTrace();
             }
         } else if (socialAccount.getAccounType().equals(SocialProvider.FACEBOOK)) {
             log.debug("Publish on FACEBOOK");
@@ -501,11 +542,11 @@ public class AbstractSurveyService extends AbstractChartService {
                 //offline_access scope permission is enabled by default . In this case
                 //https://developers.facebook.com/docs/authentication/permissions/
                 log.error("-----------------------FACEBOOK EXPIRED TOKEN----------------------- 2");
-                e.printStackTrace();
+                //e.printStackTrace();
             } catch (Exception e) {
                 published.setDatePublished(Calendar.getInstance().getTime());
                 log.error(e);
-                e.printStackTrace();
+                //e.printStackTrace();
             }
         } else if (socialAccount.getAccounType().equals(SocialProvider.LINKEDIN)) {
             log.debug("Publish on LinkedIn");
@@ -524,7 +565,7 @@ public class AbstractSurveyService extends AbstractChartService {
             } catch (Exception e) {
                 published.setDatePublished(Calendar.getInstance().getTime());
                 log.error(e);
-                e.printStackTrace();
+                //e.printStackTrace();
             }
         } else if (socialAccount.getAccounType().equals(SocialProvider.GOOGLE_BUZZ)) {
             BuzzAPIOperations buzzInAPIOperations = new GoogleBuzzAPITemplate(socialAccount);
@@ -538,7 +579,7 @@ public class AbstractSurveyService extends AbstractChartService {
             } catch (Exception e) {
                 published.setDatePublished(Calendar.getInstance().getTime());
                 log.error(e);
-                e.printStackTrace();
+                //e.printStackTrace();
             }
         }
         if (published != null) {
@@ -680,6 +721,48 @@ public class AbstractSurveyService extends AbstractChartService {
         }
     }
 
+
+    /**
+     * Retrieve {@link SocialAccount} by a list of id.
+     * @param socialId
+     * @param username
+     * @return
+     * @throws EnMeNoResultsFoundException
+     */
+    public List<SocialAccount> retrieveSocialAccountsbyId(
+    		final List<Long> socialId, 
+            final String username) {
+        final List<SocialAccount> socialAccountList = new ArrayList<SocialAccount>();
+        for (Long socialAccountId : socialId) {
+			try {
+				socialAccountList.add(this.getSocialAccountsbyId(socialAccountId, username));
+			} catch (EnMeNoResultsFoundException e) {
+				log.warn("social network not found: " + e.getMessage());
+			}
+        }
+        return socialAccountList;
+    }
+
+
+    /**
+     * Get Social account by ud and user.
+     * @param socialAccountId
+     * @param username
+     * @return
+     * @throws EnMeNoResultsFoundException
+     */
+    private SocialAccount getSocialAccountsbyId(
+            final Long socialAccountId, final String username)
+            throws EnMeNoResultsFoundException {
+        final SocialAccount socialAccount = getAccountDao().getSocialAccount(
+                socialAccountId, getAccount(username));
+        if (socialAccount == null) {
+            throw new EnMeNoResultsFoundException("Social Account id not valid");
+        }
+        return socialAccount;
+    }
+
+
     /**
      * @return the answerPollPath
      */
@@ -750,5 +833,17 @@ public class AbstractSurveyService extends AbstractChartService {
         this.hashTagDao = hashTagDao;
     }
 
+	/**
+	 * @return the scheduledDao
+	 */
+	public IScheduled getScheduledDao() {
+		return scheduledDao;
+	}
 
+	/**
+	 * @param scheduledDao the scheduledDao to set
+	 */
+	public void setScheduledDao(final IScheduled scheduledDao) {
+		this.scheduledDao = scheduledDao;
+	}
 }

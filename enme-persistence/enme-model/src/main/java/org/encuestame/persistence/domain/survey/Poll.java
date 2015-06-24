@@ -32,8 +32,6 @@ import javax.persistence.UniqueConstraint;
 import org.encuestame.persistence.domain.AbstractSurvey;
 import org.encuestame.persistence.domain.HashTag;
 import org.encuestame.persistence.domain.question.Question;
-import org.hibernate.annotations.Cache;
-import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.search.annotations.DocumentId;
 import org.hibernate.search.annotations.Indexed;
 import org.hibernate.search.annotations.IndexedEmbedded;
@@ -47,7 +45,7 @@ import org.hibernate.search.annotations.IndexedEmbedded;
 @Entity
 @Table(name = "poll",
        uniqueConstraints = {@UniqueConstraint(columnNames={"poll_hash"})})
-@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+//@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class Poll extends AbstractSurvey {
 
     /**
@@ -79,12 +77,11 @@ public class Poll extends AbstractSurvey {
      * {@link Folder}.
      */
     private PollFolder pollFolder;
-    
+
     /**
      * Hash Tags.
      **/
     private Set<HashTag> hashTags = new HashSet<HashTag>();
-
 
     /**
      * @return the poll_id
@@ -102,7 +99,7 @@ public class Poll extends AbstractSurvey {
      */
     public void setPollId(Long pollId) {
         this.pollId = pollId;
-    } 
+    }
 
     /**
      * @return the pollCompleted
@@ -184,11 +181,11 @@ public class Poll extends AbstractSurvey {
     public void setPollFolder(PollFolder pollFolder) {
         this.pollFolder = pollFolder;
     }
-    
+
     /**
      * @return the hashTags
      */
-    @ManyToMany(cascade = CascadeType.ALL)
+    @ManyToMany(cascade = CascadeType.MERGE)
     @JoinTable(name = "poll_hashtags",
                joinColumns = {@JoinColumn(name = "poll_id")},
                inverseJoinColumns = {@JoinColumn(name = "hastag_id")})
@@ -202,4 +199,48 @@ public class Poll extends AbstractSurvey {
     public void setHashTags(Set<HashTag> hashTags) {
         this.hashTags = hashTags;
     }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString() {
+        return "Poll [pollId=" + pollId + ", pollCompleted=" + pollCompleted
+                + ", pollHash=" + pollHash + ", question=" + question
+                + ", publish=" + publish + ", pollFolder=" + pollFolder
+                + ", hashTags=" + hashTags + ", getCreateDate()="
+                + getCreateDate() + ", getCustomMessage()="
+                + getCustomMessage() + ", getCustomStartMessages()="
+                + getCustomStartMessages() + ", getOptionalTitle()="
+                + getOptionalTitle() + ", getPasswordRestrictions()="
+                + getPasswordRestrictions() + ", getIpRestriction()="
+                + getIpRestriction() + ", getPassProtection()="
+                + getPassProtection() + ", getIpProtection()="
+                + getIpProtection() + ", getCloseAfterDate()="
+                + getCloseAfterDate() + ", getClosedDate()=" + getClosedDate()
+                + ", getCloseAfterquota()=" + getCloseAfterquota()
+                + ", getClosedQuota()=" + getClosedQuota()
+                + ", getCustomFinalMessage()=" + getCustomFinalMessage()
+                + ", getMultipleResponse()=" + getMultipleResponse()
+                + ", getShowResults()=" + getShowResults()
+                + ", getShowComments()=" + getShowComments()
+                + ", getShowAdditionalInfo()=" + getShowAdditionalInfo()
+                + ", getAdditionalInfo()=" + getAdditionalInfo()
+                + ", getNotifications()=" + getNotifications()
+                + ", getNumbervotes()=" + getNumbervotes() + ", getHits()="
+                + getHits() + ", getName()=" + getName()
+                + ", getEditorOwner()=" + getEditorOwner()
+                + ", getRelevance()=" + getRelevance() + ", getLikeVote()="
+                + getLikeVote() + ", getDislikeVote()=" + getDislikeVote()
+                + ", getFavourites()=" + getFavourites() + ", getEndDate()="
+                + getEndDate() + ", getUpdatedDate()=" + getUpdatedDate()
+                + ", getOwner()=" + getOwner() + ", getScheduled()="
+                + getScheduled() + ", getScheduleDate()=" + getScheduleDate()
+                + ", getLocationLatitude()=" + getLocationLatitude()
+                + ", getLocationLongitude()=" + getLocationLongitude()
+                + ", getClass()=" + getClass() + ", hashCode()=" + hashCode()
+                + ", toString()=" + super.toString() + "]";
+    }
+
+
 }

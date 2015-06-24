@@ -52,7 +52,7 @@ public class NotificationDao extends AbstractHibernateDaoSupport implements INot
      * @return
      */
     @SuppressWarnings("unchecked")
-    public final List<Notification> loadNotificationByUserAndLimit(
+    public final List loadNotificationByUserAndLimit(
             final Account user,
             final Integer limit,
             final Integer start,
@@ -71,7 +71,7 @@ public class NotificationDao extends AbstractHibernateDaoSupport implements INot
      * @see org.encuestame.persistence.dao.INotification#loadNotificationByDate(org.encuestame.persistence.domain.security.Account, java.lang.Integer, java.lang.Integer, java.util.Date, java.util.Date, java.lang.Boolean)
      */
     @SuppressWarnings("unchecked")
-    public final List<Notification> loadNotificationByDate(
+    public final List loadNotificationByDate(
             final Account user,
             final Integer limit,
             final Integer start,
@@ -103,7 +103,7 @@ public class NotificationDao extends AbstractHibernateDaoSupport implements INot
     @SuppressWarnings("unchecked")
     private Long retrieveCountNotification(final Account account, final String query) {
         Long resultsSize = 0L;
-        final List<Object> list =  getHibernateTemplate().findByNamedParam("select count(*) from Notification "
+        final List list =  getHibernateTemplate().findByNamedParam("select count(*) from Notification "
                 +" WHERE account =:user", "user", account);
         if (list.get(0) instanceof Long) {
             resultsSize = (Long) list.get(0);
@@ -121,7 +121,7 @@ public class NotificationDao extends AbstractHibernateDaoSupport implements INot
          final DetachedCriteria crit = DetachedCriteria.forClass(Notification.class);
          crit.setProjection(Projections.rowCount());
          crit.add(Restrictions.eq("readed", Boolean.FALSE));
-         final List<Long> results = getHibernateTemplate().findByCriteria(crit);
+         final List results = getHibernateTemplate().findByCriteria(crit);
          log.debug("retrieveTotalNotReadedNotificationStatus "+results.size());
          return (Long) (results.get(0) == null ? 0 : results.get(0));
     }

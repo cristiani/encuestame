@@ -1,34 +1,30 @@
 <%@ include file="/WEB-INF/jsp/includes/taglibs.jsp"%>
-
-
 <article class="web-hashtag-wrapper mobile-hashtag-wrapper">
-   <div class="mobile-question-detail category_color">
-               ${tagName.hashTagName}
+   <div class="mobile-home-subtitle category_color">
+         #${tagName.hashTagName}
+         <div channel="/encuestame/hashtag/time/range/refresh/graph"
+              data-dojo-type="me/web/widget/menu/TimeRangeDropDownMenu"
+              defaultDateRange="365">
+         </div>
    </div>
 
    <div class="graph-missing">
-        <%--     <section class="web-hashtag-header web-detail-header">
+            <section class="web-hashtag-header web-detail-header">
             <div class="web-hashtag-options">
-            <div channel="/encuestame/hashtag/time/range/refresh/graph"
-                 data-dojo-type="me/web/widget/menu/TimeRangeDropDownMenu"
-                 defaultDateRange="365">
-           </div>
+
         </div>
         </section>
-
         <section class="web-ht-graph-wrapper emne-box emne-box-gray">
-           <div data-dojo-type="me/web/widget/hashtags/HashTagGraph"
-               channel="/encuestame/hashtag/time/range/refresh/graph"
-               hashtagName="${tagName.hashTagName}"
-             ></div>
-        </section> --%>
-        Hashtag Graph In Progress
+            <section data-dojo-type="me/web/widget/hashtags/HashTagGraph"
+                     channel="/encuestame/hashtag/time/range/refresh/graph"
+                     hashtagName="${tagName.hashTagName}">
+        </section>
    </div>
 
     <div class="web-ht-detail-wrapper">
        <div class="web-ht-wrapper-mainline">
            <article class="emne-box emne-box-gray">
-                <header class="category_color">
+                <header class="mobile-home-subtitle category_color">
                   <spring:message code="home.hashtag.lastpub" />
                 </header>
                 <div class="web-pup-wrapper">
@@ -43,7 +39,7 @@
                 </div>
             </article>
              <article class="emne-box emne-box-gray">
-                     <header class="category_color">
+                     <header class="mobile-home-subtitle category_color">
                         <spring:message code="home.hashtag.tweets" />
                      </header>
                 <section>
@@ -56,20 +52,20 @@
                      </div>
                 </section>
             </article>
-            <article class="emne-box emne-box-gray">
-                 <header class="category_color">
+            <!-- <article class="emne-box emne-box-gray">
+                 <header class="mobile-home-subtitle category_color">
                     <spring:message code="home.hashtag.stats" />
                  </header>
-                 <div  data-dojo-type="me/web/widget/stats/GenericStats"
-            class="web-generic-stats"
-            channel="/encuestame/hashtag/time/range/refresh/graph"
-            typeGeneric="HASHTAG"
-            generic="${tagName.hashTagName}"
+                 <div data-dojo-type="me/web/widget/stats/GenericStats"
+                      class="web-generic-stats"
+                      channel="/encuestame/hashtag/time/range/refresh/graph"
+                      typeGeneric="HASHTAG"
+                      generic="${tagName.hashTagName}"
                       id="generic">
                  </div>
-             </article>
+             </article> -->
             <article class="emne-box emne-box-gray">
-                 <header class="category_color">
+                 <header class="mobile-home-subtitle category_color">
                    <spring:message code="home.hashtag.position" />
                  </header>
                  <section data-dojo-type="me/web/widget/stats/RatePosition"
@@ -79,8 +75,8 @@
                       id="position">
                  </section>
             </article>
-            <article class="emne-box emne-box-gray">
-                 <header class="category_color">
+            <article class="emne-box emne-box-gray enme-mob-section">
+                 <header class="mobile-home-subtitle category_color">
                     <spring:message code="home.hashtag.profile" />
                  </header>
                  <div data-dojo-type="me/web/widget/stats/TopProfiles"

@@ -4,24 +4,13 @@
     <parent>
         <groupId>org.encuestame</groupId>
         <artifactId>encuestame-persistence</artifactId>
-        <version>1.147-M2-SNAPSHOT</version>
+        <version>1.5.3-SNAPSHOT</version>
     </parent>
     <artifactId>enme-model</artifactId>
     <packaging>jar</packaging>
-    <name>encuestame persistence MODEL</name>
+    <name>Encuestame MODEL</name>
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>${java-version}</source>
-                    <target>${java-version}</target>
-                    <encoding>ISO-8859-1</encoding>
-                    <showDeprecation>true</showDeprecation>
-                    <compilerArgument>-Xlint:unchecked</compilerArgument>
-                </configuration>
-            </plugin>
             <plugin>
                <groupId>org.apache.maven.plugins</groupId>
                <artifactId>maven-jar-plugin</artifactId>
@@ -126,7 +115,7 @@
         </dependency>
         <dependency>
             <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
+            <artifactId>${servlet-api-artifact}</artifactId>
         </dependency>
         <dependency>
             <groupId>commons-httpclient</groupId>
@@ -245,10 +234,6 @@
                     <groupId>org.springframework</groupId>
                     <artifactId>spring-webmvc</artifactId>
                 </dependency>
-               <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-web</artifactId>
-            </dependency>
             <!-- Spring Integration  -->
             <dependency>
                 <groupId>org.springframework.integration</groupId>

@@ -12,7 +12,10 @@
  */
 package org.encuestame.core.cron;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Logger;
+import org.encuestame.core.config.EnMePlaceHolderConfigurer;
 import org.encuestame.core.service.imp.IFrontEndService;
 import org.encuestame.core.service.imp.IPollService;
 import org.encuestame.core.service.imp.ITweetPollService;
@@ -20,6 +23,7 @@ import org.encuestame.persistence.exception.EnMePollNotFoundException;
 import org.encuestame.persistence.exception.EnMeTweetPollNotFoundException;
 import org.encuestame.utils.enums.SearchPeriods;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 
 /**
  * Calculate relevance.
@@ -29,7 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class CalculateRelevance {
 
      /** Log. **/
-    private Logger log = Logger.getLogger(this.getClass());
+    private static final Log log = LogFactory.getLog(CalculateRelevance.class);
 
     /**
      * {@link IFrontEndService}.
@@ -64,20 +68,24 @@ public class CalculateRelevance {
      * @throws EnMePollNotFoundException
      * @throws EnMeTweetPollNotFoundException
      */
+    @Scheduled(cron = "${cron.calculateRelevance}")
     public void calculate() {
-        log.info("************ Start calculate relevance item **************");
-        // Unused code to search items by date range.
-        /*
-         * final Calendar dateFrom = Calendar.getInstance();
-         * dateFrom.add(Calendar.DATE, -5); final Calendar datebefore =
-         * Calendar.getInstance(); datebefore.add(Calendar.DATE, -5); final
-         * Calendar todayDate = Calendar.getInstance();
-         */
-        getFrontEndService().processItemstoCalculateRelevance(
-                getTweetPollService().getTweetPollsbyRange(MAX_RESULTS, START_RESULTS,
-                        null),
-                getPollService().getPollsByRange(MAX_RESULTS, START_RESULTS, null),
-                null, SearchPeriods.ALLTIME);
+        if (EnMePlaceHolderConfigurer.getSystemInitialized()) {
+            log.info("Starting calculate of relevance..");
+            // Unused code to search items by date range.
+            /*
+             * final Calendar dateFrom = Calendar.getInstance();
+             * dateFrom.add(Calendar.DATE, -5); final Calendar datebefore =
+             * Calendar.getInstance(); datebefore.add(Calendar.DATE, -5); final
+             * Calendar todayDate = Calendar.getInstance();
+             */
+            getFrontEndService().processItemstoCalculateRelevance(
+                    getTweetPollService().getTweetPollsbyRange(MAX_RESULTS, START_RESULTS,
+                            null),
+                    getPollService().getPollsByRange(MAX_RESULTS, START_RESULTS, null),
+                    null, SearchPeriods.ALLTIME);
+            log.info("calculated relevance finished");
+        }
     }
 
     /**
@@ -88,24 +96,10 @@ public class CalculateRelevance {
     }
 
     /**
-     * @param frontEndService the frontEndService to set
-     */
-    public void setFrontEndService(final IFrontEndService frontEndService) {
-        this.frontEndService = frontEndService;
-    }
-
-    /**
      * @return the tweetPollService
      */
     public ITweetPollService getTweetPollService() {
         return tweetPollService;
-    }
-
-    /**
-     * @param tweetPollService the tweetPollService to set
-     */
-    public void setTweetPollService(final ITweetPollService tweetPollService) {
-        this.tweetPollService = tweetPollService;
     }
 
     /**
@@ -115,10 +109,5 @@ public class CalculateRelevance {
         return pollService;
     }
 
-    /**
-     * @param pollService the pollService to set
-     */
-    public void setPollService(final IPollService pollService) {
-        this.pollService = pollService;
-    }
+
 }

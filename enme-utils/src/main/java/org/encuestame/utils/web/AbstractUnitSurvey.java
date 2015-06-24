@@ -17,8 +17,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import org.codehaus.jackson.annotate.JsonIgnore;
-import org.codehaus.jackson.annotate.JsonProperty;
+import org.encuestame.utils.enums.TypeSearchResult;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Abstract Unit Survey.
@@ -35,6 +37,17 @@ public abstract class AbstractUnitSurvey implements Serializable {
     /** List of HashTags. **/
     @JsonProperty(value = "hashtags")
     private List<HashTagBean> hashTags = new ArrayList<HashTagBean>();
+
+    //Ignored for now due ENCUESTAME-669
+    //@JsonProperty(value = "comments")
+    @JsonIgnore
+    private List<CommentBean> comments = new ArrayList<CommentBean>();
+
+    /**
+     * Define the type.
+     */
+    @JsonProperty(value = "type_item")
+    private TypeSearchResult typeSearchResult;
 
     /**
      * Define if the abstract survey is restricted by password.
@@ -58,6 +71,9 @@ public abstract class AbstractUnitSurvey implements Serializable {
     @JsonProperty(value = "hits")
     private Long hits;
 
+    @JsonProperty(value = "vote_up")
+    private Boolean voteUp = Boolean.TRUE;
+
     /** **/
     @JsonProperty(value = "item_type")
     private String itemType;
@@ -72,10 +88,10 @@ public abstract class AbstractUnitSurvey implements Serializable {
 
     @JsonProperty(value = "create_date")
     private String createDate;
-    
+
     @JsonIgnore
     private Date createDateComparable;
-    
+
     /** Relevance. **/
     @JsonProperty(value = "relevance")
     private Long relevance;
@@ -101,8 +117,14 @@ public abstract class AbstractUnitSurvey implements Serializable {
     private String showComments;
 
     /** Show results. **/
+
     @JsonProperty(value = "is_show_results")
+    @Deprecated
     private Boolean isShowResults;
+
+
+    @JsonProperty(value = "show_results")
+    private String showResults;
 
     /** Poll Folder. **/
     @JsonProperty(value = "folder_id")
@@ -138,7 +160,7 @@ public abstract class AbstractUnitSurvey implements Serializable {
 
     /** Multiple response option. **/
     @JsonProperty(value = "multiple_response")
-    private String multipleResponse;
+    private Boolean multipleResponse;
 
     /** Show total comments received. **/
     @JsonProperty(value = "total_comments")
@@ -146,6 +168,15 @@ public abstract class AbstractUnitSurvey implements Serializable {
 
     @JsonIgnore
     private String hashtagAsString = "";
+
+    /** Hide the Poll **/
+    @JsonProperty(value = "is_hidden")
+    private Boolean isHidden;
+
+    /** Protect the Poll or Survey with a password **/
+    @JsonIgnore
+    @JsonProperty(value = "is_password_protected")
+    private Boolean isPasswordProtected;
 
     /**
      * @return the hashTags
@@ -374,21 +405,6 @@ public abstract class AbstractUnitSurvey implements Serializable {
     }
 
     /**
-     * @return the showResults
-     */
-    @JsonIgnore
-    public Boolean getShowResults() {
-        return isShowResults;
-    }
-
-    /**
-     * @param showResults the showResults to set
-     */
-    public void setIsShowResults(final Boolean isShowResults) {
-        this.isShowResults = isShowResults;
-    }
-
-    /**
      * @return the folderId
      */
     @JsonIgnore
@@ -512,14 +528,14 @@ public abstract class AbstractUnitSurvey implements Serializable {
      * @return the multipleResponse
      */
     @JsonIgnore
-    public String getMultipleResponse() {
+    public Boolean getMultipleResponse() {
         return multipleResponse;
     }
 
     /**
      * @param multipleResponse the multipleResponse to set
      */
-    public void setMultipleResponse(final String multipleResponse) {
+    public void setMultipleResponse(final Boolean multipleResponse) {
         this.multipleResponse = multipleResponse;
     }
 
@@ -555,13 +571,13 @@ public abstract class AbstractUnitSurvey implements Serializable {
         final StringBuffer buffer = new StringBuffer();
         int size = getHashTags().size();
         for (HashTagBean bean : getHashTags()) {
-        	//check the hashtag is emtpy
-        	if (!bean.getHashTagName().isEmpty()) {
-		        buffer.append(bean.getHashTagName());
-		        if (!(--size == 0)) {
-		            buffer.append(",");
-		        }
-        	}
+            //check the hashtag is emtpy
+            if (!bean.getHashTagName().isEmpty()) {
+                buffer.append(bean.getHashTagName());
+                if (!(--size == 0)) {
+                    buffer.append(",");
+                }
+            }
         }
         this.hashtagAsString = buffer.toString();
         return hashtagAsString;
@@ -586,18 +602,141 @@ public abstract class AbstractUnitSurvey implements Serializable {
         this.isPasswordRestriction = isPasswordRestriction;
     }
 
+    /**
+     * @return the createDateComparable
+     */
+    @JsonIgnore
+    public Date getCreateDateComparable() {
+        return createDateComparable;
+    }
+
+    /**
+     * @param createDateComparable the createDateComparable to set
+     */
+    public void setCreateDateComparable(Date createDateComparable) {
+        this.createDateComparable = createDateComparable;
+    }
+
+    /**
+     * @param showResults the showResults to set
+     */
+    public void setShowResults(String showResults) {
+        this.showResults = showResults;
+    }
+
+    /**
+     * @return the showResults
+     */
+    @JsonIgnore
+    public String getShowResults() {
+        return showResults;
+    }
+
+    /**
+     * @return the typeSearchResult
+     */
+    @JsonIgnore
+    public TypeSearchResult getTypeSearchResult() {
+        return typeSearchResult;
+    }
+
+    /**
+     * @param typeSearchResult the typeSearchResult to set
+     */
+    public void setTypeSearchResult(TypeSearchResult typeSearchResult) {
+        this.typeSearchResult = typeSearchResult;
+    }
+
+    /**
+     * @return the comments
+     */
+    @JsonIgnore
+    public List<CommentBean> getComments() {
+        return comments;
+    }
+
+    /**
+     * @param comments the comments to set
+     */
+    public void setComments(List<CommentBean> comments) {
+        this.comments = comments;
+    }
+
 	/**
-	 * @return the createDateComparable
+	 * @return the isHidden
 	 */
     @JsonIgnore
-	public Date getCreateDateComparable() {
-		return createDateComparable;
+	public Boolean getIsHidden() {
+		return isHidden;
 	}
 
 	/**
-	 * @param createDateComparable the createDateComparable to set
+	 * @param isHidden the isHidden to set
 	 */
-	public void setCreateDateComparable(Date createDateComparable) {
-		this.createDateComparable = createDateComparable;
+	public void setIsHidden(Boolean isHidden) {
+		this.isHidden = isHidden;
 	}
+
+	/**
+	 * @return the isPasswordProtected
+	 */
+	public Boolean getIsPasswordProtected() {
+		return isPasswordProtected;
+	}
+
+	/**
+	 * @param isPasswordProtected the isPasswordProtected to set
+	 */
+	public void setIsPasswordProtected(Boolean isPasswordProtected) {
+		this.isPasswordProtected = isPasswordProtected;
+	}
+
+    public Boolean getVoteUp() {
+        return voteUp;
+    }
+
+    public void setVoteUp(Boolean voteUp) {
+        this.voteUp = voteUp;
+    }
+
+    @Override
+    public String toString() {
+        return "AbstractUnitSurvey{" +
+                "hashTags=" + hashTags +
+                ", comments=" + comments +
+                ", typeSearchResult=" + typeSearchResult +
+                ", isPasswordRestriction=" + isPasswordRestriction +
+                ", ownerUsername='" + ownerUsername + '\'' +
+                ", relativeTime='" + relativeTime + '\'' +
+                ", totalVotes=" + totalVotes +
+                ", hits=" + hits +
+                ", voteUp=" + voteUp +
+                ", itemType='" + itemType + '\'' +
+                ", likeVote=" + likeVote +
+                ", dislikeVote=" + dislikeVote +
+                ", createDate='" + createDate + '\'' +
+                ", createDateComparable=" + createDateComparable +
+                ", relevance=" + relevance +
+                ", favorite=" + favorite +
+                ", latitude=" + latitude +
+                ", longitude=" + longitude +
+                ", additionalInfo='" + additionalInfo + '\'' +
+                ", showComments='" + showComments + '\'' +
+                ", isShowResults=" + isShowResults +
+                ", showResults='" + showResults + '\'' +
+                ", folderId=" + folderId +
+                ", isShowAdditionalInfo=" + isShowAdditionalInfo +
+                ", isCloseAfterDate=" + isCloseAfterDate +
+                ", closedDate='" + closedDate + '\'' +
+                ", isCloseAfterQuota=" + isCloseAfterQuota +
+                ", closedQuota=" + closedQuota +
+                ", isIpRestricted=" + isIpRestricted +
+                ", ipRestricted='" + ipRestricted + '\'' +
+                ", multipleResponse=" + multipleResponse +
+                ", totalComments=" + totalComments +
+                ", hashtagAsString='" + hashtagAsString + '\'' +
+                ", isHidden=" + isHidden +
+                ", isPasswordProtected=" + isPasswordProtected +
+                '}';
+    }
 }

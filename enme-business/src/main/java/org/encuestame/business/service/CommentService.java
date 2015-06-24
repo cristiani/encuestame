@@ -33,7 +33,8 @@ import org.encuestame.persistence.exception.EnMeExpcetion;
 import org.encuestame.persistence.exception.EnMeNoResultsFoundException;
 import org.encuestame.persistence.exception.EnmeFailOperation;
 import org.encuestame.persistence.exception.EnmeNotAllowedException;
-import org.encuestame.utils.enums.CommentStatus;
+import org.encuestame.utils.enums.CommentOptions;
+import org.encuestame.utils.enums.CommentOptions;
 import org.encuestame.utils.enums.CommentsSocialOptions;
 import org.encuestame.utils.enums.SearchPeriods;
 import org.encuestame.utils.enums.TypeSearchResult;
@@ -41,6 +42,7 @@ import org.encuestame.utils.web.CommentBean;
 import org.hibernate.HibernateException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * {@link Comment} service support.
@@ -48,6 +50,7 @@ import org.springframework.stereotype.Service;
  * @since  August 14, 2011
  */
 @Service
+@Transactional
 public class CommentService extends AbstractBaseService implements ICommentService{
 
     /**
@@ -92,7 +95,7 @@ public class CommentService extends AbstractBaseService implements ICommentServi
             final Integer max,
             final Integer start) throws EnMeExpcetion{
         final List<Comment> comments = new ArrayList<Comment>();
-        if (searchResult.equals(TypeSearchResult.TWEETPOLL)) {
+        if (searchResult.equals(TypeSearchResult.TWEETPOLL)) { 
             final TweetPoll tweetPoll = getTweetPollService().getTweetPollPublishedById(
                     itemId);
              comments.addAll(this.getCommentsbyTweetPoll(tweetPoll, max, start));
@@ -126,10 +129,10 @@ public class CommentService extends AbstractBaseService implements ICommentServi
      * @see org.encuestame.core.service.imp.ICommentService#getCommentsbyUser(java.lang.Integer, java.lang.Integer)
      */
     public List<CommentBean> getCommentsbyUser(final Integer maxResults,
-            final Integer start, final CommentStatus commentStatus) throws EnMeNoResultsFoundException{
+            final Integer start, final List<CommentOptions> commentOptions) throws EnMeNoResultsFoundException{
         final List<CommentBean> commentBean = new ArrayList<CommentBean>();
         final List<Comment> comments = getCommentsOperations().getCommentsbyUser(
-                getUserAccount(getUserPrincipalUsername()), maxResults, start, commentStatus);
+                getUserAccount(getUserPrincipalUsername()), maxResults, start, commentOptions);
         commentBean.addAll(ConvertDomainBean.convertListCommentDomainToBean(comments));
         return commentBean;
     }
@@ -170,11 +173,15 @@ public class CommentService extends AbstractBaseService implements ICommentServi
         if (TypeSearchResult.TWEETPOLL.equals(commentBean.getType())) {
             final TweetPoll tweetPoll = getTweetPollById(commentBean.getId());
             comment.setTweetPoll(tweetPoll);
+            comment.setCommentOptions(tweetPoll.getShowComments() == null ? CommentOptions.PUBLISHED : tweetPoll.getShowComments());
         } else if (TypeSearchResult.POLL.equals(commentBean.getType())) {
             final Poll poll = getPollById(commentBean.getId());
             comment.setPoll(poll);
+            comment.setCommentOptions(poll.getShowComments()  == null ? CommentOptions.PUBLISHED : poll.getShowComments());
         } else if (TypeSearchResult.SURVEY.equals(commentBean.getType())) {
             //TODO: survey get imp
+        	//comment.setPoll(poll);
+            //comment.setCommentOptions(poll.getShowComments());
         } else {
             throw new EnmeNotAllowedException("type not allowed");
         }
@@ -223,7 +230,7 @@ public class CommentService extends AbstractBaseService implements ICommentServi
      * (non-Javadoc)
      * @see org.encuestame.core.service.imp.ICommentService#voteCommentSocialOption(java.lang.Long, org.encuestame.persistence.domain.CommentsSocialOptions)
      */
-    public void voteCommentSocialOption(final Long commentId, final CommentsSocialOptions vote) throws EnMeNoResultsFoundException,
+	public void voteCommentSocialOption(final Long commentId, final CommentsSocialOptions vote) throws EnMeNoResultsFoundException,
                                         HibernateException, EnmeFailOperation{
         final Comment comment = this.getCommentbyId(commentId);
         if (vote.equals(CommentsSocialOptions.LIKE_VOTE)) {
@@ -246,12 +253,12 @@ public class CommentService extends AbstractBaseService implements ICommentServi
      */
     public List<CommentBean> retrieveCommentsByTypeAndStatus(final Long id,
             final TypeSearchResult typeSearch, final Integer maxResults,
-            final Integer start, final CommentStatus commentStatus, final SearchPeriods period) {
+            final Integer start, final CommentOptions commentOptions, final SearchPeriods period) {
         List<Comment> commentsByStatus = new ArrayList<Comment>();
         final List<CommentBean> commentBean = new ArrayList<CommentBean>();
 
         commentsByStatus = getCommentsOperations().getCommentsbyTypeAndStatus(
-                id, typeSearch, maxResults, start, commentStatus, period);
+                id, typeSearch, maxResults, start, commentOptions, period);
 
 
         commentBean.addAll(ConvertDomainBean
@@ -270,16 +277,16 @@ public class CommentService extends AbstractBaseService implements ICommentServi
 	 */
 	public Long totalCommentsbyType(final Long id,
 			final TypeSearchResult itemType,
-			final CommentStatus commentStatus, final SearchPeriods period) throws EnMeNoResultsFoundException {
+			final CommentOptions commentOptions, final SearchPeriods period) throws EnMeNoResultsFoundException {
 		Long totalComments = 0L;
 
 		if(itemType.equals(TypeSearchResult.TWEETPOLL)){
 			final TweetPoll tpoll = this.getTweetPollById(id);
-			totalComments = getCommentsOperations().getTotalCommentsbyItem(tpoll.getTweetPollId(), itemType, commentStatus, period);
+			totalComments = getCommentsOperations().getTotalCommentsbyItem(tpoll.getTweetPollId(), itemType, commentOptions, period);
 		}
 		else if(itemType.equals(TypeSearchResult.POLL)){
 			final Poll poll = this.getPollById(id);
-			totalComments = getCommentsOperations().getTotalCommentsbyItem(poll.getPollId(), itemType, commentStatus, period);
+			totalComments = getCommentsOperations().getTotalCommentsbyItem(poll.getPollId(), itemType, commentOptions, period);
 
 		}
 		else if(itemType.equals(TypeSearchResult.SURVEY)){
@@ -298,12 +305,12 @@ public class CommentService extends AbstractBaseService implements ICommentServi
 	 * org.encuestame.utils.enums.SearchPeriods)
 	 */
 	public Long totalCommentsbyTypeAndStatus(final TypeSearchResult itemType,
-			final CommentStatus commentStatus, final SearchPeriods period)
+			final CommentOptions commentOptions, final SearchPeriods period)
 			throws EnMeNoResultsFoundException {
 		Long totalCommentsbyType = 0L;
 
 		totalCommentsbyType = getCommentsOperations()
-				.getTotalCommentsbyTypeAndStatus(itemType, commentStatus,
+				.getTotalCommentsbyTypeAndStatus(itemType, commentOptions,
 						period);
 
 		return totalCommentsbyType;

@@ -54,7 +54,7 @@ import org.hibernate.search.annotations.Store;
 @Entity
 @Indexed(index="Question")
 @Table(name = "questions")
-@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+//@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class Question {
 
     /**
@@ -287,4 +287,16 @@ public class Question {
     public void setQuestionPattern(QuestionPattern questionPattern) {
         this.questionPattern = questionPattern;
     }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString() {
+        return "Question [qid=" + qid + ", question=" + question
+                + ", slugQuestion=" + slugQuestion + ", qidKey=" + qidKey
+                + ", createDate=" + createDate + ", hits=" + hits + "]";
+    }
+
+
 }

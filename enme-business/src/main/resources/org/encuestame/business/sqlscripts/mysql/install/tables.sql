@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS `client` (
 CREATE TABLE IF NOT EXISTS `comments` (
   `commentId` bigint(20) NOT NULL AUTO_INCREMENT,
   `comment` longtext NOT NULL,
-  `created_at` date DEFAULT NULL,
+  `created_at` datetime DEFAULT NULL,
   `dislikeVote` bigint(20) DEFAULT NULL,
   `likeVote` bigint(20) DEFAULT NULL,
   `parentId` bigint(20) DEFAULT NULL,
@@ -355,13 +355,16 @@ CREATE TABLE IF NOT EXISTS `hits` (
   `survey_sid` bigint(20) DEFAULT NULL,
   `tweetPoll_tweet_poll_id` bigint(20) DEFAULT NULL,
   `userAccount_uid` bigint(20) DEFAULT NULL,
+  `type_item` int(11) DEFAULT NULL,
+  `question_qid` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`hit_id`),
   UNIQUE KEY `hit_id` (`hit_id`),
   KEY `FK30DF4019AA125` (`hashTag_hash_tag_id`),
   KEY `FK30DF4063976E9` (`poll_poll_id`),
   KEY `FK30DF4051153812` (`survey_sid`),
   KEY `FK30DF40953C854B` (`tweetPoll_tweet_poll_id`),
-  KEY `FK30DF40369F8B2C` (`userAccount_uid`)
+  KEY `FK30DF40369F8B2C` (`userAccount_uid`),
+  KEY `FK30DF4046BF7A1C` (`question_qid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
 --
@@ -415,6 +418,10 @@ CREATE TABLE IF NOT EXISTS `poll` (
   `end_date` datetime DEFAULT NULL,
   `favorites` bit(1) DEFAULT NULL,
   `hits` bigint(20) DEFAULT NULL,
+  `limit_votes` int(11) DEFAULT NULL,
+  `limits_votes_enabled` bit(1) DEFAULT NULL,
+  `repeated_votes` int(11) DEFAULT NULL,
+  `repeated_votes_enabled` bit(1) DEFAULT NULL,
   `ip_protection` varchar(255) DEFAULT NULL,
   `ip_restrictions` bit(1) DEFAULT NULL,
   `like_vote` bigint(20) DEFAULT NULL,
@@ -428,7 +435,7 @@ CREATE TABLE IF NOT EXISTS `poll` (
   `relevance` bigint(20) DEFAULT NULL,
   `showAdditionalInfo` bit(1) DEFAULT NULL,
   `comment_option` int(11) DEFAULT NULL,
-  `show_results` bit(1) DEFAULT NULL,
+  `show_results` int(1) DEFAULT NULL,
   `update_date` datetime DEFAULT NULL,
   `poll_completed` bit(1) NOT NULL,
   `poll_hash` varchar(255) NOT NULL,
@@ -436,7 +443,13 @@ CREATE TABLE IF NOT EXISTS `poll` (
   `editor` bigint(20) DEFAULT NULL,
   `owner_id` bigint(20) DEFAULT NULL,
   `poll_folder` bigint(20) DEFAULT NULL,
+  `schedule_date_tweet` datetime DEFAULT NULL,
+  `schedule` bit(1) DEFAULT NULL,
   `qid` bigint(20) NOT NULL,
+  `is_hidden` bit(1) DEFAULT NULL,
+  `is_password_protected` bit(1) DEFAULT NULL,
+  `poll_password` varchar(255) DEFAULT NULL,
+
   PRIMARY KEY (`poll_id`),
   UNIQUE KEY `poll_id` (`poll_id`),
   UNIQUE KEY `poll_hash` (`poll_hash`),
@@ -718,13 +731,13 @@ CREATE TABLE IF NOT EXISTS `social_account` (
   `userOwner_uid` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`social_account_id`),
   UNIQUE KEY `social_account_id` (`social_account_id`),
-  UNIQUE KEY `social_account_name` (`social_account_name`),
   KEY `FK50078B5B5ECE45A2` (`account_uid`),
   KEY `FK50078B5BF2F411F2` (`userOwner_uid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
 --
 -- Table structure for table `surveys`
+-- FIXME schedule_date_survey is missing in the java files
 --
 
 CREATE TABLE IF NOT EXISTS `surveys` (
@@ -735,6 +748,10 @@ CREATE TABLE IF NOT EXISTS `surveys` (
   `closeAfterDate` bit(1) DEFAULT NULL,
   `close_after_quota` bit(1) DEFAULT NULL,
   `close_date` datetime DEFAULT NULL,
+  `limit_votes` int(11) DEFAULT NULL,
+  `limits_votes_enabled` bit(1) DEFAULT NULL,
+  `repeated_votes` int(11) DEFAULT NULL,
+  `repeated_votes_enabled` bit(1) DEFAULT NULL,
   `closed_quota` int(11) DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `custom_final_message` int(11) DEFAULT NULL,
@@ -763,6 +780,8 @@ CREATE TABLE IF NOT EXISTS `surveys` (
   `date_interview` date DEFAULT NULL,
   `schedule_date_survey` datetime DEFAULT NULL,
   `is_Schedule` bit(1) DEFAULT NULL,
+  `schedule_date_tweet` datetime DEFAULT NULL,
+  `schedule` bit(1) DEFAULT NULL,
   `show_progress_bar` bit(1) DEFAULT NULL,
   `start_date` datetime DEFAULT NULL,
   `survey_slug_name` varchar(255) DEFAULT NULL,
@@ -771,6 +790,9 @@ CREATE TABLE IF NOT EXISTS `surveys` (
   `owner_id` bigint(20) DEFAULT NULL,
   `project_project_id` bigint(20) DEFAULT NULL,
   `survey_folder` bigint(20) DEFAULT NULL,
+  `is_hidden` bit(1) DEFAULT NULL,
+  `is_password_protected` bit(1) DEFAULT NULL,
+  `poll_password` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`sid`),
   UNIQUE KEY `sid` (`sid`),
   KEY `FK91914459A3C7A06A` (`survey_folder`),
@@ -1043,9 +1065,12 @@ CREATE TABLE IF NOT EXISTS `userAccount` (
   `email` varchar(150) NOT NULL,
   `userProfilePicture` varchar(255) DEFAULT NULL,
   `status` bit(1) DEFAULT NULL,
+  `welcome_page` bit(1) DEFAULT NULL,
+  `help_links` bit(1) DEFAULT NULL,
   `username` varchar(30) NOT NULL,
   `account_uid` bigint(20) DEFAULT NULL,
   `groupId` bigint(20) DEFAULT NULL,
+  `user_language` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`uid`),
   UNIQUE KEY `uid` (`uid`),
   UNIQUE KEY `email` (`email`),
@@ -1145,3 +1170,36 @@ CREATE TABLE IF NOT EXISTS `survey_temporal_result` (
   KEY `FK7867CF5496009B4` (`answer_q_answer_id`),
   KEY `FK7867CF551153812` (`survey_sid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+
+
+--
+-- Table structure for table `scheduled`
+--
+
+CREATE TABLE IF NOT EXISTS `scheduled` (
+`publish_scheduled_id` BIGINT( 20 ) NOT NULL AUTO_INCREMENT PRIMARY KEY ,
+`publish_attempts` INT( 11 ) NULL ,
+`scheduled_date` DATETIME NULL ,
+`status` INT( 11 ) NULL ,
+`tweet_text` VARCHAR( 255 ) NULL ,
+`type_search` INT( 11 ) NULL ,
+`poll_poll_id` BIGINT( 20 ) NULL ,
+`socialAccount_social_account_id` BIGINT( 20 ) NULL ,
+`survey_sid` BIGINT( 20 ) NULL ,
+`tpoll_tweet_poll_id` BIGINT( 20 ) NULL ,
+`tpollSavedPublished_status_save_poll_id` BIGINT( 20 ) NULL ,
+`publication_date` DATETIME NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+
+
+-- Table structure for table `helpPage`
+--
+
+CREATE TABLE IF NOT EXISTS `helpPage` (
+  `help_page_id` BIGINT(20) NOT NULL AUTO_INCREMENT,
+  `url_path` VARCHAR(255) DEFAULT NULL,
+  `help_user_id` BIGINT(20) DEFAULT NULL,
+  PRIMARY KEY (`help_page_id`),
+  UNIQUE KEY `help_page_id` (`help_page_id`),
+  KEY `FKD0EB1D70F47A8064` (`help_user_id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;

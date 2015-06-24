@@ -1,7 +1,12 @@
-<div>
-    <h2>
-        At least one social Network is required to create a Tweetpoll. <a
-            href="<%=request.getContextPath()%>/settings/social"> Add
-        your social network here.</a>
-    </h2>
+<div style="padding: 10px;margin: 0;">
+    <div class="padding">
+        <div class="page-header">
+            <h4>
+                <spring:message code="social.required" />
+            </h4>
+        </div>
+        <a href="<%=request.getContextPath()%>/settings/social">
+            <spring:message code="social.add" />
+        </a>
+    </div>
 </div>

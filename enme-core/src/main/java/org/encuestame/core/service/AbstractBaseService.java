@@ -31,6 +31,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.encuestame.core.config.EnMePlaceHolderConfigurer;
 import org.encuestame.core.service.imp.MailServiceOperations;
+import org.encuestame.core.service.startup.DirectorySetupOperations;
+import org.encuestame.core.service.startup.MailService;
 import org.encuestame.core.util.ConvertDomainBean;
 import org.encuestame.persistence.domain.Email;
 import org.encuestame.persistence.domain.EmailList;
@@ -50,7 +52,7 @@ import org.encuestame.persistence.exception.EnmeFailOperation;
 import org.encuestame.utils.DateUtil;
 import org.encuestame.utils.MD5Utils;
 import org.encuestame.utils.ValidationUtils;
-import org.encuestame.utils.enums.CommentStatus;
+import org.encuestame.utils.enums.CommentOptions;
 import org.encuestame.utils.enums.HashTagRate;
 import org.encuestame.utils.enums.NotificationEnum;
 import org.encuestame.utils.enums.RelativeTimeEnum;
@@ -71,7 +73,7 @@ import org.springframework.web.servlet.support.RequestContextUtils;
 
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
-import twitter4j.http.AccessToken;
+import twitter4j.auth.AccessToken;
 
 /**
  * Service.
@@ -86,13 +88,11 @@ public abstract class AbstractBaseService extends AbstractDataSource {
     /**
      * {@link MessageSourceFactoryBean}.
      */
-    @Autowired
     private MessageSourceFactoryBean messageSourceFactoryBean;
 
     /**
      *  {@link MailService}.
      */
-    @Resource()
     private MailServiceOperations mailService;
 
     /**
@@ -257,7 +257,7 @@ public abstract class AbstractBaseService extends AbstractDataSource {
         final HashTag hashTag = getHashTagDao().getHashTagByName(
                 ValidationUtils.removeNonAlphanumericCharacters(tagName
                         .toLowerCase()));
-        log.warn("AService getHashTag - is "+tagName+" on  database ?->"+hashTag);
+        log.trace("AService getHashTag - is "+tagName+" on  database ?->"+hashTag);
         if (hashTag == null) {
             //if possible we can't exception to allow create a new with the parameter.
             if (exceptionIfNotFound || exceptionIfNotFound == null) {
@@ -438,6 +438,7 @@ public abstract class AbstractBaseService extends AbstractDataSource {
      * Setter.
      * @param messageSource {@link MessageSourceFactoryBean}
      */
+    @Autowired
     public void setMessageSourceFactoryBean(final MessageSourceFactoryBean messageSourceFactoryBean) {
         this.messageSourceFactoryBean = messageSourceFactoryBean;
     }
@@ -575,9 +576,9 @@ public abstract class AbstractBaseService extends AbstractDataSource {
 
     /**
      * Create {@link Notification} with url reference.
-     * @param description
-     * @param additional
-     * @param urlReference
+     * @param description the notification title
+     * @param additional A detail description
+     * @param urlReference URL path to open the resource (optional)
      * @return
      * @throws EnMeNoResultsFoundException
      */
@@ -586,9 +587,27 @@ public abstract class AbstractBaseService extends AbstractDataSource {
             final String additional,
             final String urlReference,
             final Boolean group) throws EnMeNoResultsFoundException{
+        return this.createNotification(description, additional, urlReference, group, getUserAccount(getUserPrincipalUsername()));
+    }
+
+    /**
+     * Create {@link Notification} with url reference.
+     * @param description the notification title
+     * @param additional A detail description
+     * @param urlReference URL path to open the resource (optional)
+     * @param userAccount userAccount
+     * @return
+     * @throws EnMeNoResultsFoundException
+     */
+    public Notification createNotification(
+            final NotificationEnum description,
+            final String additional,
+            final String urlReference,
+            final Boolean group,
+            final UserAccount account) throws EnMeNoResultsFoundException{
         final Notification notification = new Notification();
         notification.setDescription(description);
-        notification.setAccount(getUserAccount(getUserPrincipalUsername()).getAccount());
+        notification.setAccount(account.getAccount());
         notification.setAdditionalDescription(additional);
         notification.setUrlReference(urlReference);
         notification.setCreated(Calendar.getInstance().getTime());
@@ -750,14 +769,14 @@ public abstract class AbstractBaseService extends AbstractDataSource {
             }
         } catch (EnmeFailOperation e) {
             log.fatal("not able to create user configuration profile");
-            e.printStackTrace();
+            //e.printStackTrace();
+            log.error(e);
         }
     }
 
     /**
      * @return the mailServiceOperations
      */
-    @Autowired
     public MailServiceOperations getMailService() {
         return mailService;
     }
@@ -765,6 +784,7 @@ public abstract class AbstractBaseService extends AbstractDataSource {
     /**
      * @param mailServiceOperations the mailServiceOperations to set
      */
+    @Resource(name= "mailService")
     public void setMailService(final MailServiceOperations mailServiceOperations) {
         this.mailService = mailServiceOperations;
     }
@@ -776,7 +796,7 @@ public abstract class AbstractBaseService extends AbstractDataSource {
      * @return
      */
     protected Long getTotalCommentsbyType(final Long itemId, final TypeSearchResult itemType){
-        final Long totalComments = getCommentsOperations().getTotalCommentsbyItem(itemId, itemType, CommentStatus.ALL , null);
+        final Long totalComments = getCommentsOperations().getTotalCommentsbyItem(itemId, itemType, CommentOptions.ALL , null);
         return totalComments;
     }
 
@@ -830,15 +850,15 @@ public abstract class AbstractBaseService extends AbstractDataSource {
     }
 
     public HashTagDetailStats createHastagItemDetailGraph(final String label,
-			final Long value, final String subLabel, final Long milisec, final DateTime dateTimeLabel) {
-		final HashTagDetailStats tagDetails = new HashTagDetailStats();
-		tagDetails.setLabel(label);
-		tagDetails.setValue(value);
-		tagDetails.setSubLabel(subLabel);
-		tagDetails.setMilisecondsDate(milisec);
-		tagDetails.setDateValue(dateTimeLabel);
-		return tagDetails;
-	}
+            final Long value, final String subLabel, final Long milisec, final DateTime dateTimeLabel) {
+        final HashTagDetailStats tagDetails = new HashTagDetailStats();
+        tagDetails.setLabel(label);
+        tagDetails.setValue(value);
+        tagDetails.setSubLabel(subLabel);
+        tagDetails.setMilisecondsDate(milisec);
+        tagDetails.setDateValue(dateTimeLabel);
+        return tagDetails;
+    }
 
 
 }

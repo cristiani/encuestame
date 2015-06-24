@@ -52,6 +52,13 @@ public interface ITweetPoll extends IBaseDao{
     TweetPoll getTweetPollById(final Long tweetPollId) throws HibernateException;
 
     /**
+     * Get a {@link TweetPollSavedPublishedStatus} by Id
+     * @param id id
+     * @return {@link TweetPollSavedPublishedStatus}
+     */
+    TweetPollSavedPublishedStatus getTweetPollPublishedStatusbyId(final Long id);
+
+    /**
      * Get published tweetpoll by id.
      * @param tweetPollId
      * @return
@@ -509,4 +516,38 @@ public interface ITweetPoll extends IBaseDao{
      */
 	List<Object[]> getTweetPollsRangeStats(final String tagName,
 			final SearchPeriods period);
+	/**
+	 * Return all possible links related with one asset
+	 * @param tweetPoll
+	 * @param survey
+	 * @param poll
+	 * @param itemType
+	 * @return
+	 */
+	List<TweetPollSavedPublishedStatus> getAllLinks(
+            final TweetPoll tweetPoll, final Survey survey, final Poll poll,
+            final TypeSearchResult itemType);
+
+	List<TweetPollSavedPublishedStatus> searchSocialLinksbyType(
+	            final TweetPoll tweetPoll,  final Poll poll, final TypeSearchResult itemType, final List<SocialProvider> splist, final List<SocialAccount> socialAccounts);
+
+	/**
+	 * Retrieve {@link TweetPollFolder} by keyword
+	 * @param keyword
+	 * @param userAcc
+	 * @return
+	 */
+	List<TweetPollFolder> getTweetPollFolderByKeyword(final String keyword,
+			final UserAccount userAcc);
+
+	  /**
+     *  Retrieve Polls by Keyword without User.
+     * @param keyword
+     * @param start
+     * @param maxResults
+     * @return
+     */
+	List<TweetPoll> retrieveTweetPollByKeyword(final String keyword,
+			final Integer start,
+			final Integer maxResults);
 }

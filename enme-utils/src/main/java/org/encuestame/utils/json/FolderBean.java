@@ -15,9 +15,9 @@ package org.encuestame.utils.json;
 import java.io.Serializable;
 import java.util.Date;
 
-import org.codehaus.jackson.annotate.JsonIgnore;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.annotate.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Unit Folder.
@@ -40,6 +40,9 @@ public class FolderBean implements Serializable {
 
     @JsonProperty(value = "create_date")
     private Date createAt;
+
+    @JsonProperty(value = "items")
+    private Long items = 0L;
 
     public FolderBean() {
     }
@@ -77,6 +80,15 @@ public class FolderBean implements Serializable {
      */
     public void setFolderName(final String folderName) {
         this.folderName = folderName;
+    }
+
+    @JsonIgnore
+    public Long getItems() {
+        return items;
+    }
+
+    public void setItems(Long items) {
+        this.items = items;
     }
 
     /**

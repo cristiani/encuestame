@@ -50,7 +50,7 @@ import org.hibernate.search.annotations.Store;
 @Entity
 @Indexed(index="Survey")
 @Table(name = "surveys")
-@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+//@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class Survey extends AbstractSurvey {
 
     /****/
@@ -77,10 +77,8 @@ public class Survey extends AbstractSurvey {
     private Date startDate;
 
     /** Scheduled Survey. **/
+    @Deprecated // moved to parent class
     private Boolean scheduleSurvey;
-
-    /** Scheduled Date. **/
-    private Date scheduleDate;
 
     /**
      * Show progress bar.
@@ -89,7 +87,7 @@ public class Survey extends AbstractSurvey {
 
      /** Survey slug name**/
      private String surveySlugName;
-     
+
      /**
       * Hash Tags.
       **/
@@ -237,22 +235,6 @@ public class Survey extends AbstractSurvey {
     }
 
     /**
-     * @return the scheduleDate
-     */
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "schedule_date_survey")
-    public Date getScheduleDate() {
-        return scheduleDate;
-    }
-
-    /**
-     * @param scheduleDate the scheduleDate to set
-     */
-    public void setScheduleDate(final Date scheduleDate) {
-        this.scheduleDate = scheduleDate;
-    }
-
-    /**
      * @return the surveySlugName
      */
     @Field(index=Index.TOKENIZED, store=Store.YES)
@@ -267,7 +249,7 @@ public class Survey extends AbstractSurvey {
     public void setSurveySlugName(final String surveySlugName) {
         this.surveySlugName = surveySlugName;
     }
-    
+
     /**
      * @return the hashTags
      */

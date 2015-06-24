@@ -46,7 +46,8 @@ import org.encuestame.utils.web.QuestionAnswerBean;
 import org.encuestame.utils.web.SurveyBean;
 import org.encuestame.utils.web.UnitSurveySection;
 import org.hibernate.HibernateException;
-import org.springframework.stereotype.Service; 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Survey Service.
@@ -55,6 +56,7 @@ import org.springframework.stereotype.Service;
  * @version $Id$
  */
 @Service
+@Transactional
 public class SurveyService extends AbstractSurveyService implements ISurveyService {
 
     /**
@@ -217,15 +219,15 @@ public class SurveyService extends AbstractSurveyService implements ISurveyServi
             surveyDomain.setCloseAfterquota(surveyBean.getCloseAfterquota());
             surveyDomain.setCloseAfterquota(surveyBean.getCloseAfterquota());
             surveyDomain.setClosedQuota(surveyBean.getClosedQuota());
-            surveyDomain.setShowResults(surveyBean.getShowResults());
+            //surveyDomain.setShowResults(surveyBean.getShowResults());
             surveyDomain.setNumbervotes(surveyBean.getNumbervotes());
             surveyDomain.setHits(surveyBean.getHits());
             surveyDomain.setAdditionalInfo(surveyBean.getAdditionalInfo());
             surveyDomain.setShowAdditionalInfo(surveyBean.getShowAdditionalInfo());
             surveyDomain.setNotifications(surveyBean.getNotifications());
             surveyDomain.setName(surveyBean.getName());
-            surveyDomain.setCreatedAt(surveyBean.getCreatedAt());
-            surveyDomain.setFavorites(surveyBean.getFavorites());
+            surveyDomain.setCreateDate(surveyBean.getCreatedAt());
+            surveyDomain.setFavourites(surveyBean.getFavorites());
             try {
                 surveyDomain.setOwner(getAccount(surveyBean.getOwnerUsername()));
                 surveyDomain.setEditorOwner(getUserAccount(surveyBean.getOwnerUsername()));

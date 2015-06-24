@@ -264,7 +264,7 @@ public class TestUserDao extends AbstractBase {
     public void testGetTotalTweetPollByUser(){
         this.questionsAnswers1 = createQuestionAnswer("monday", question, "12345");
         this.questionsAnswers2 = createQuestionAnswer("sunday", question, "12346");
-        this.tweetPoll = createPublishedTweetPoll(userAccount.getAccount(), question);
+        this.tweetPoll = createPublishedTweetPoll(userAccount, question);
         this.pollSwitch1 = createTweetPollSwitch(questionsAnswers1, tweetPoll);
         this.pollSwitch2 = createTweetPollSwitch(questionsAnswers2, tweetPoll);
         createTweetPollResult(pollSwitch1, "192.168.0.1");
@@ -384,9 +384,9 @@ public class TestUserDao extends AbstractBase {
      * Test exception getAccessToken.
      * @throws EnMeNoResultsFoundException
      */
-    //@Test(expected= EnMeNoResultsFoundException.class)
+	@Test(expected= EnMeNoResultsFoundException.class)
     public void testfindAccountByConnection() throws EnMeNoResultsFoundException{
-       //  getAccountDao().findAccountByConnection("TWITTER", "xxxxxxxx");
+		getAccountDao().findAccountByConnection(SocialProvider.FACEBOOK, "xxxxxxxx");
     }
 
     /**
@@ -445,13 +445,13 @@ public class TestUserDao extends AbstractBase {
         beforeDate.add(Calendar.DATE, -7);
         beforeDate.add(Calendar.HOUR, +5);
         // final String expireValue = getProperty("account.expire.limit");
-        //System.out.println("Account Value  property------>"+ expireValue);
+
 
         for (int i = 0; i < 10; i++) {
             createdAt.add(Calendar.DATE, -i);
             createdAt.add(Calendar.HOUR, +i);
                final UserAccount uAcc = createUserAccount(Boolean.FALSE, createdAt.getTime(), "diana-"+i, this.account);
-               //System.out.println("Account Date ------>"+ uAcc.getEnjoyDate());
+
         }
         //create disabled account.g
         createdAt.add(Calendar.MONTH, +1);

@@ -22,7 +22,7 @@ import org.apache.commons.configuration.reloading.FileChangedReloadingStrategy;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.encuestame.core.files.PathUtil;
-import org.encuestame.core.service.DirectorySetupOperations;
+import org.encuestame.core.service.startup.DirectorySetupOperations;
 import org.encuestame.persistence.exception.EnmeFailOperation;
 import org.encuestame.utils.social.SocialNetworkBean;
 
@@ -60,7 +60,7 @@ public class XMLConfigurationFileSupport {
      *
      * @throws ConfigurationException
      */
-    private void createConfigurationFile(){
+    public void createConfigurationFile(){
             try {
                 final File file = new File(buildConfigFilePath());
                 this.reloadConfiguration(file);
@@ -68,7 +68,7 @@ public class XMLConfigurationFileSupport {
                 log.fatal(e);
             } catch (EnmeFailOperation e) {
                  log.fatal(e);
-                e.printStackTrace();
+                //e.printStackTrace();
             }
     }
 
@@ -89,15 +89,12 @@ public class XMLConfigurationFileSupport {
      * @param file
      * @throws ConfigurationException
      */
-    private void reloadConfiguration(final File file)
-            throws ConfigurationException {
+    private void reloadConfiguration(final File file) throws ConfigurationException {
         log.debug("createConfiguration " + file.exists());
         log.debug("createConfiguration.... " + file.getAbsolutePath());
-        XMLConfigurationFileSupport.xmlConfiguration = new XMLConfiguration(
-                file);
+        XMLConfigurationFileSupport.xmlConfiguration = new XMLConfiguration(file);
         XMLConfigurationFileSupport.xmlConfiguration.setAutoSave(true);
-        XMLConfigurationFileSupport.xmlConfiguration
-                .setReloadingStrategy(new FileChangedReloadingStrategy());
+        XMLConfigurationFileSupport.xmlConfiguration.setReloadingStrategy(new FileChangedReloadingStrategy());
     }
 
     /**
@@ -110,11 +107,11 @@ public class XMLConfigurationFileSupport {
             final File file = new File(buildConfigFilePath());
             this.reloadConfiguration(file);
         } catch (ConfigurationException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
             log.fatal(e);
             log.fatal("not able to reload configuration manager");
         } catch (EnmeFailOperation e) {
-             e.printStackTrace();
+             //e.printStackTrace();
              log.fatal(e);
              log.fatal("not able to reload configuration manager");
         }

@@ -16,8 +16,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.collections.ListUtils;
-import org.encuestame.utils.enums.TypeSearch;
+ import org.encuestame.utils.enums.TypeSearch;
 import org.encuestame.utils.enums.TypeSearchResult;
 import org.encuestame.utils.social.SocialProvider;
 
@@ -66,6 +65,31 @@ public class Search implements Serializable {
 
     /** **/
     private List<Long> socialAccounts = new ArrayList<Long>();
+
+    /** **/
+	private Boolean isPublished = Boolean.TRUE;
+
+	/** **/
+	private Boolean isHidden = Boolean.FALSE;
+
+	/** **/
+	private Boolean isPasswordProtected = Boolean.FALSE;
+
+
+
+	/**
+	 * @return the isPublished
+	 */
+	public Boolean getIsPublished() {
+		return isPublished;
+	}
+
+	/**
+	 * @param isPublished the isPublished to set
+	 */
+	public void setIsPublished(final Boolean isPublished) {
+		this.isPublished = isPublished;
+	}    
 
 
     /**
@@ -224,4 +248,32 @@ public class Search implements Serializable {
     public void setSocialAccounts(List<Long> socialAccounts) {
         this.socialAccounts = socialAccounts;
     }
+
+	/**
+	 * @return the isHidden
+	 */
+	public Boolean getIsHidden() {
+		return isHidden;
+	}
+
+	/**
+	 * @param isHidden the isHidden to set
+	 */
+	public void setIsHidden(final Boolean isHidden) {
+		this.isHidden = isHidden;
+	}
+
+	/**
+	 * @return the isPasswordProtected
+	 */
+	public Boolean getIsPasswordProtected() {
+		return isPasswordProtected;
+	}
+
+	/**
+	 * @param isPasswordProtected the isPasswordProtected to set
+	 */
+	public void setIsPasswordProtected(final Boolean isPasswordProtected) {
+		this.isPasswordProtected = isPasswordProtected;
+	}
 }

@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -29,13 +30,12 @@ import org.encuestame.core.config.EnMePlaceHolderConfigurer;
 import org.encuestame.core.security.SecurityUtils;
 import org.encuestame.core.security.util.EnMePasswordUtils;
 import org.encuestame.core.security.util.PasswordGenerator;
+import org.encuestame.core.service.imp.IDashboardService;
 import org.encuestame.core.service.imp.SecurityOperations;
 import org.encuestame.core.util.ConvertDomainBean;
-import org.encuestame.persistence.domain.security.Account;
-import org.encuestame.persistence.domain.security.Group;
-import org.encuestame.persistence.domain.security.Permission;
-import org.encuestame.persistence.domain.security.SocialAccount;
-import org.encuestame.persistence.domain.security.UserAccount;
+import org.encuestame.core.util.EnMeUtils;
+import org.encuestame.persistence.domain.dashboard.Dashboard;
+import org.encuestame.persistence.domain.security.*;
 import org.encuestame.persistence.domain.security.UserAccount.PictureSource;
 import org.encuestame.persistence.exception.EnMeExpcetion;
 import org.encuestame.persistence.exception.EnMeNoResultsFoundException;
@@ -43,6 +43,8 @@ import org.encuestame.persistence.exception.EnmeFailOperation;
 import org.encuestame.persistence.exception.IllegalSocialActionException;
 import org.encuestame.utils.enums.EnMePermission;
 import org.encuestame.utils.enums.FollowOperations;
+import org.encuestame.utils.enums.LayoutEnum;
+import org.encuestame.utils.enums.NotificationEnum;
 import org.encuestame.utils.enums.Profile;
 import org.encuestame.utils.json.SocialAccountBean;
 import org.encuestame.utils.security.SignUpBean;
@@ -53,11 +55,13 @@ import org.encuestame.utils.web.UnitLists;
 import org.encuestame.utils.web.UnitPermission;
 import org.encuestame.utils.web.UserAccountBean;
 import org.jasypt.util.password.StrongPasswordEncryptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.MailSendException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.googlecode.ehcache.annotations.Cacheable;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Security Service Implementation.
@@ -65,12 +69,18 @@ import com.googlecode.ehcache.annotations.Cacheable;
  * @since 27/04/2009 11:35:01
  */
 @Service
+@Transactional
 public class SecurityService extends AbstractBaseService implements SecurityOperations {
 
     /**
      * Log.
      */
     private Logger log = Logger.getLogger(this.getClass());
+
+    /**
+     *
+     */
+    private IDashboardService dashboardService;
 
 
     /** Default User Permission **/
@@ -180,14 +190,13 @@ public class SecurityService extends AbstractBaseService implements SecurityOper
      */
     public void deleteUser(final UserAccountBean userBean) throws EnMeNoResultsFoundException{
             final UserAccount userDomain = getUserAccount(userBean.getUsername());
-                log.info("notify delete account");
-                if (EnMePlaceHolderConfigurer.getBooleanProperty("application.email.enabled")) {
-                    getMailService().sendDeleteNotification(userBean.getEmail().trim(),
-                            getMessageProperties("userMessageDeleteNotification"));
-                }
-                log.info("deleting user");
-                getAccountDao().delete(userDomain);
-                log.info("user deleted");
+            log.info("notify delete account");
+            if (EnMePlaceHolderConfigurer.getBooleanProperty("application.email.enabled")) {
+                getMailService().sendDeleteNotification(userBean.getEmail().trim(), getMessageProperties("userMessageDeleteNotification"));
+            }
+            log.info("deleting user");
+            getAccountDao().delete(userDomain);
+            log.info("user deleted");
     }
 
     /**
@@ -211,7 +220,8 @@ public class SecurityService extends AbstractBaseService implements SecurityOper
                     getMailService().sendRenewPasswordEmail(userBean);
                 } catch (Exception e) {
                     // TODO Auto-generated catch block
-                    e.printStackTrace();
+                    //e.printStackTrace();
+                    log.error(e);
                 }
             //} else {
                 //log.warn("Notifications Email are suspendend");
@@ -295,7 +305,7 @@ public class SecurityService extends AbstractBaseService implements SecurityOper
              }
         } catch (Exception e) {
             // TODO: handle exception Group no pertenece a usuario
-            e.printStackTrace();
+            //e.printStackTrace();
             log.error(e);
         }
         return counterUsers;
@@ -315,6 +325,8 @@ public class SecurityService extends AbstractBaseService implements SecurityOper
                }
           } catch (Exception e) {
               // TODO: handle exception Group don't belong to user
+              //e.printStackTrace();
+              log.error(e);
           }
           return usersbyGroups;
     }
@@ -617,8 +629,7 @@ public class SecurityService extends AbstractBaseService implements SecurityOper
      * (non-Javadoc)
      * @see org.encuestame.core.service.imp.SecurityOperations#createAdministrationUser(org.encuestame.core.config.AdministratorProfile)
      */
-    public UserAccountBean createAdministrationUser(
-            final AdministratorProfile administratorProfile) {
+    public UserAccountBean createAdministrationUser(final AdministratorProfile administratorProfile) {
         log.debug("----------- create administration user ---------");
         final UserAccount userAccount = new UserAccount();
         try{
@@ -650,6 +661,10 @@ public class SecurityService extends AbstractBaseService implements SecurityOper
             this.assingPermission(userAccount, permissions);
             log.debug("administration user ----> Adding Security label");
 
+            // create a dashboard by default
+            final Dashboard dashboard = createDefaultDashboard(userAccount);
+            getDashboardService().addGadgetOnDashboard(dashboard.getBoardId(), "stream", userAccount);
+
             //Disabled auto-autenticate, the administrative user should sign in manually
             //SecurityUtils.authenticate(userAccount);
 
@@ -660,7 +675,7 @@ public class SecurityService extends AbstractBaseService implements SecurityOper
                                 .getAuthentication().getName());
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            //e.printStackTrace();
             log.error(e);
         }
         final UserAccountBean bean = ConvertDomainBean.convertBasicSecondaryUserToUserBean(userAccount);
@@ -672,8 +687,9 @@ public class SecurityService extends AbstractBaseService implements SecurityOper
      * SingUp User.
      * @param singUpBean {@link SignUpBean}.
      * @return {@link UserAccountBean}.
+     * @throws EnMeNoResultsFoundException
      */
-    public UserAccount singupUser(final SignUpBean singUpBean, boolean disableEmail) {
+    public UserAccount singupUser(final SignUpBean singUpBean, boolean disableEmail) throws EnMeNoResultsFoundException {
         //FIXME: Validate the email inside this service.
         log.debug("singupUser "+singUpBean.toString());
         //create account/
@@ -718,8 +734,9 @@ public class SecurityService extends AbstractBaseService implements SecurityOper
                 try {
                     getMailService().sendConfirmYourAccountEmail(singUpBean, inviteCode);
                 } catch (Exception e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
+                    // ENCUESTAME-602 ????
+                    //e.printStackTrace();
+                    log.error(e);
                 }
             }
         }
@@ -729,10 +746,37 @@ public class SecurityService extends AbstractBaseService implements SecurityOper
             log.debug("Get Authoritie Name:{ "+SecurityContextHolder.getContext().getAuthentication().getName());
         }
 
-        // disable, user should sign in from web.
-        // SecurityUtils.authenticate(userAccount);
+        // create a welcome notification
+        createNotification(NotificationEnum.WELCOME_SIGNUP,
+                getMessageProperties("notification.wellcome.account"),
+                null, false, userAccount);
 
+        // create a dashboard by default
+        final Dashboard dashboard = createDefaultDashboard(userAccount);
+        getDashboardService().addGadgetOnDashboard(dashboard.getBoardId(), "stream", userAccount);
+        //FIXME: disabled, user must sign in from web.
+        // The reason is sometimes there are issues with the auto-login
+        // SecurityUtils.authenticate(userAccount);
         return userAccount;
+    }
+
+    /**
+     * It creates a default dashboard
+     * @param userAccount
+     */
+    private Dashboard createDefaultDashboard(final UserAccount userAccount) {
+         //FUTURE: this code must be in higher level {reuse code}
+        final Dashboard board = new Dashboard();
+        board.setPageBoardName(EnMePlaceHolderConfigurer.getProperty("dashboard.default.name") == null ? "" : EnMePlaceHolderConfigurer.getProperty("dashboard.default.name"));
+        board.setDescription(EnMePlaceHolderConfigurer.getProperty("dashboard.default.descr") == null ? "" : EnMePlaceHolderConfigurer.getProperty("dashboard.default.descr")) ;
+        board.setUserBoard(userAccount);
+        board.setPageLayout(LayoutEnum.AB_COLUMN_BLOCK);
+        board.setFavorite(true);
+        board.setSelectedByDefault(true);
+        board.setBoardSequence(1);
+        board.setFavoriteCounter(1);
+        getDashboardDao().saveOrUpdate(board);
+        return board;
     }
 
     /**
@@ -741,7 +785,7 @@ public class SecurityService extends AbstractBaseService implements SecurityOper
      * @return
      */
     public Boolean isActivated(final SignUpBean signUpBean){
-        //TODO: true?
+        ///FIXME: implementation is needed
         return true;
     }
 
@@ -788,7 +832,8 @@ public class SecurityService extends AbstractBaseService implements SecurityOper
                 getMailService().sendInvitation(email, code);
             } catch (Exception e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+                //e.printStackTrace();
+                log.error(e);
             }
         }
     }
@@ -838,7 +883,8 @@ public class SecurityService extends AbstractBaseService implements SecurityOper
                 getMailService().send(email, getMessageProperties("NewPassWordMail"), password);
             } catch (Exception e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+                //e.printStackTrace();
+                log.error(e);
             }
         }
     }
@@ -939,11 +985,16 @@ public class SecurityService extends AbstractBaseService implements SecurityOper
         log.debug("updating accoutn profile :" + property + " whith value "
                 + value);
         final UserAccount account = getUserAccount(getUserPrincipalUsername());
-        if (Profile.USERNAME.equals(property)) {
+       if (Profile.USERNAME.equals(property)) {
             account.setUsername(value.trim());
             //TODO: we need update authorities
-        } else if (Profile.EMAIL.equals(property)) {
+       } else if (Profile.EMAIL.equals(property)) {
             account.setUserEmail(value.trim());
+       } else if (Profile.WELCOME.equals(property)) {
+           account.setWelcomePage(Boolean.TRUE);
+       } else if (Profile.PAGE_INFO.equals(property)) {
+           // save the opossite that already had saved previously
+           account.setHelpLinks(!account.getHelpLinks());
        } else if (Profile.PICTURE.equals(property)) {
            PictureSource picture = PictureSource.findPictureSource(value);
            if (picture != null) {
@@ -969,13 +1020,16 @@ public class SecurityService extends AbstractBaseService implements SecurityOper
             final String username,
             final String email) throws EnMeNoResultsFoundException{
         final UserAccount account = getUserAccount(getUserPrincipalUsername());
-            log.debug("update Account user to update " + account.getUsername());
-            log.debug("update Account Profile bio " + bio);
-            log.debug("update Account Profile language " + language);
-            log.debug("update Account Profile language " + username);
+            if (log.isDebugEnabled()) {
+                log.debug("update Account user to update " + account.getUsername());
+                log.debug("update Account Profile bio " + bio);
+                log.debug("update Account Profile language " + language);
+                log.debug("update Account Profile username " + username);
+            }
             account.setCompleteName(completeName);
             account.setUserEmail(email);
             account.setUsername(username);
+            account.setLanguage(language == null ? new Locale(EnMeUtils.DEFAULT_LANG).getLanguage() : new Locale(language).getLanguage());
             getAccountDao().saveOrUpdate(account);
             //clear the security context
             SecurityContextHolder.clearContext();
@@ -992,10 +1046,12 @@ public class SecurityService extends AbstractBaseService implements SecurityOper
             final String action) throws EnMeNoResultsFoundException, IllegalSocialActionException{
         final UserAccount userAccount = getUserAccount(getUserPrincipalUsername());
         final SocialAccount social = getAccountDao().getSocialAccount(accountId, userAccount.getAccount());
-        log.debug("changeStateSocialAccount account");
-        log.debug("changeStateSocialAccount account accountId "+accountId);
-        log.debug("changeStateSocialAccount account action "+action);
-        if(social == null){
+        if (log.isDebugEnabled()) {
+            log.debug("changeStateSocialAccount account");
+            log.debug("changeStateSocialAccount account accountId "+accountId);
+            log.debug("changeStateSocialAccount account action "+action);
+        }
+        if (social == null) {
             throw new EnMeNoResultsFoundException("social accout not found");
         }
         if ("default".equals(action)) {
@@ -1012,6 +1068,7 @@ public class SecurityService extends AbstractBaseService implements SecurityOper
      * (non-Javadoc)
      * @see org.encuestame.business.service.imp.SecurityOperations#addNewSocialAccount(java.lang.String, java.lang.String, org.encuestame.core.social.SocialUserProfile, org.encuestame.persistence.domain.social.SocialProvider)
      */
+    @Transactional(readOnly = false)
     public SocialAccount addNewSocialAccount(
             final String token,
             final String tokenSecret,
@@ -1124,7 +1181,8 @@ public class SecurityService extends AbstractBaseService implements SecurityOper
                 getMailService().welcomeNotificationAccount(userAcc);
             } catch (Exception e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+                //e.printStackTrace();
+                log.error(e);
             }
         }
         return ConvertDomainBean.convertBasicSecondaryUserToUserBean(userAcc);
@@ -1148,7 +1206,8 @@ public class SecurityService extends AbstractBaseService implements SecurityOper
                     getMailService().sendConfirmYourAccountEmail(singUpBean, inviteCode);
                 } catch (Exception e) {
                     log.fatal("not able to send new invite code");
-                    e.printStackTrace();
+                    //e.printStackTrace();
+                    log.error(e);
                 }
             } else {
                 log.info("invite code requested by " + userAccount.getUsername() + " it's null, nothing to do");
@@ -1172,7 +1231,8 @@ public class SecurityService extends AbstractBaseService implements SecurityOper
                 getMailService().sendNotificationStatusAccount(singUp, "Change user status");
             } catch (Exception e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+                //e.printStackTrace();
+                log.error(e);
             }
         }
     }
@@ -1212,5 +1272,69 @@ public class SecurityService extends AbstractBaseService implements SecurityOper
         final List<UserAccount> userListAvailable = getAccountDao()
                 .getUserAccounts(status);
         return userListAvailable;
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see
+     * org.encuestame.core.service.imp.SecurityOperations#getUserbyId(java.lang
+     * .Long)
+     */
+    public UserAccount getUserbyId (final Long id) throws EnMeNoResultsFoundException{
+        final UserAccount user = getAccountDao().getUserAccountById(id);
+         if (user == null) {
+             throw new EnMeNoResultsFoundException("confirmation code not found");
+         }
+        return user;
+
+    }
+
+    /**
+     *
+     * @param currentPath
+     * @param userAccount
+     * @return
+     */
+    public Boolean checkHelpURL(final String currentPath, final UserAccount userAccount) {
+        List items = this.getAccountDao().getHelpReference(currentPath, userAccount);
+        return items.size() == 0 ? true : false;
+    }
+
+    /**
+     *
+     * @param path
+     * @param userAccount
+     * @param status
+     */
+    @Transactional(readOnly = false)
+    public void updateHelpStatus(final String path,
+                                 final UserAccount userAccount,
+                                 final Boolean status) {
+        final List<HelpPage> links = getAccountDao().getHelpReference(path, userAccount);
+        //System.out.println("found help page " + links.size());
+        if (links.size() > 0 && !status) { // previous exist
+            for (HelpPage page  : links) {
+                //System.out.println("removed help page " + page.getPagePath());
+                getAccountDao().delete(page);
+            }
+        } else { // we have to create a new link
+            if (status) {
+                final HelpPage page = new HelpPage();
+                page.setPagePath(path);
+                page.setUserAccount(userAccount);
+                getAccountDao().saveOrUpdate(page);
+                //System.out.println("created help page " + path);
+            }
+        }
+    }
+
+    public IDashboardService getDashboardService() {
+        return dashboardService;
+    }
+
+    @Autowired
+    public void setDashboardService(IDashboardService dashboardService) {
+        this.dashboardService = dashboardService;
     }
 }

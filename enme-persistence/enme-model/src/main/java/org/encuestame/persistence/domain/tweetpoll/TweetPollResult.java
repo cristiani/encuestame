@@ -44,7 +44,7 @@ import org.hibernate.search.annotations.Store;
 @Entity
 @Indexed(index="TweetPollResult")
 @Table(name = "tweetpoll_result")
-@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+//@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class TweetPollResult extends AbstractGeoPoint{
 
     private Long tweetPollResultId;
@@ -115,5 +115,15 @@ public class TweetPollResult extends AbstractGeoPoint{
      */
     public void setIpVote(String ipVote) {
         this.ipVote = ipVote;
+    }
+
+    @Override
+    public String toString() {
+        return "TweetPollResult{" +
+                "tweetPollResultId=" + tweetPollResultId +
+                ", tweetPollSwitch=" + tweetPollSwitch +
+                ", ipVote='" + ipVote + '\'' +
+                ", tweetResponseDate=" + tweetResponseDate +
+                '}';
     }
 }

@@ -4,14 +4,15 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.encuestame.business.setup.install.demo.CSVParser;
+import org.encuestame.persistence.exception.EnMeNoResultsFoundException;
 import org.encuestame.test.business.security.AbstractSpringSecurityContext;
-import org.encuestame.utils.categories.test.PerformanceTest;
+import org.encuestame.utils.categories.test.DefaultTest;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.springframework.beans.factory.annotation.Autowired;
 
-@Category(PerformanceTest.class)
+@Category(DefaultTest.class)
 public class TestCSVParser extends AbstractSpringSecurityContext{
 
 	@Autowired
@@ -21,13 +22,14 @@ public class TestCSVParser extends AbstractSpringSecurityContext{
 	 * Test csv parser.
 	 * @throws IOException 
 	 * @throws FileNotFoundException 
+	 * @throws EnMeNoResultsFoundException 
 	 */
 	 @Test
-	 public void testCSVParser() throws FileNotFoundException, IOException {
+	 public void testCSVParser() throws FileNotFoundException, IOException, EnMeNoResultsFoundException {
 		 Assert.assertNotNull(this.csvParser);
 		 this.csvParser.executeCSVDemoInstall(2, 2, 2);
 		 Assert.assertEquals("Questions should be", 2, getHibernateTemplate().find("from Question").size());
-		 Assert.assertEquals("Users should be", 11, getHibernateTemplate().find("from UserAccount").size());
+		 Assert.assertEquals("Users should be", 4, getHibernateTemplate().find("from UserAccount").size());
 		 Assert.assertEquals("TweetPoll should be", 1, getHibernateTemplate().find("from TweetPoll").size());
 		 Assert.assertEquals("Poll should be", 1, getHibernateTemplate().find("from Poll").size());
 		 

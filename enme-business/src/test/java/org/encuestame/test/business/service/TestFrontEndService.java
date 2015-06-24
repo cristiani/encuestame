@@ -12,6 +12,8 @@
  */
 package org.encuestame.test.business.service;
 
+import java.io.UnsupportedEncodingException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -23,6 +25,7 @@ import org.encuestame.core.service.imp.IFrontEndService;
 import org.encuestame.persistence.domain.AccessRate;
 import org.encuestame.persistence.domain.HashTag;
 import org.encuestame.persistence.domain.question.Question;
+import org.encuestame.persistence.domain.security.Account;
 import org.encuestame.persistence.domain.security.UserAccount;
 import org.encuestame.persistence.domain.survey.Poll;
 import org.encuestame.persistence.domain.tweetpoll.TweetPoll;
@@ -31,11 +34,14 @@ import org.encuestame.persistence.exception.EnMeNoResultsFoundException;
 import org.encuestame.test.business.security.AbstractSpringSecurityContext;
 import org.encuestame.utils.categories.test.DefaultTest;
 import org.encuestame.utils.enums.HitCategory;
+import org.encuestame.utils.enums.Status;
 import org.encuestame.utils.enums.TypeSearchResult;
+import org.encuestame.utils.json.HomeBean;
 import org.encuestame.utils.web.HashTagBean;
 import org.encuestame.utils.web.ProfileRatedTopBean;
 import org.encuestame.utils.web.stats.GenericStatsBean;
 import org.encuestame.utils.web.stats.HashTagRankingBean;
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -84,7 +90,7 @@ public class TestFrontEndService extends AbstractSpringSecurityContext{
         final Question question = createQuestion("Who I am?", "");
         createQuestionAnswer("yes", question, "12345");
         createQuestionAnswer("no", question, "12346");
-        this.tweetPoll = createPublishedTweetPoll(secondary.getAccount(), question);
+        this.tweetPoll = createPublishedTweetPoll(secondary, question);
         final HashTag hashTag2 = createHashTag("programmer",80L);
         this.tweetPoll.getHashTags().add(hashTag);
         this.tweetPoll.getHashTags().add(hashTag2);
@@ -123,6 +129,24 @@ public class TestFrontEndService extends AbstractSpringSecurityContext{
         Assert.assertTrue(registerHit);
     }
 
+    @Test
+    public void testregisterVote() throws EnMeExpcetion{
+        final Question question = createQuestion("Who I am 2?", "");
+        createQuestionAnswer("yes", question, "12345");
+        createQuestionAnswer("no", question, "12346");
+        TweetPoll tp1 = createPublishedTweetPoll(secondary, question);
+        final Status registerHit = getFrontEndService().registerVote(tp1.getTweetPollId(), TypeSearchResult.TWEETPOLL, "192.168.1.1");
+        logPrint(registerHit);
+        Assert.assertEquals(registerHit, Status.ACTIVE);
+        final Status registerHit2 = getFrontEndService().registerVote(tp1.getTweetPollId(), TypeSearchResult.TWEETPOLL, "192.168.1.1");
+        Assert.assertEquals(registerHit2, Status.INACTIVE);
+        final Status registerHit3 = getFrontEndService().registerVote(tp1.getTweetPollId(), TypeSearchResult.TWEETPOLL, "1.168.1.1");
+        Assert.assertEquals(registerHit3, Status.ACTIVE);
+        final Status registerHit4 = getFrontEndService().registerVote(tp1.getTweetPollId(), TypeSearchResult.TWEETPOLL, "168.1.1");
+        Assert.assertEquals(registerHit4, Status.INACTIVE);
+
+    }
+
     /**
      * Test Get hash tags
      */
@@ -140,7 +164,7 @@ public class TestFrontEndService extends AbstractSpringSecurityContext{
         final Question question2 = createQuestion("Question 1", "");
         createQuestionAnswer("yes", question2, "12345");
         createQuestionAnswer("no", question2, "12346");
-        this.tweetPoll = createPublishedTweetPoll(secondary.getAccount(), question2);
+        this.tweetPoll = createPublishedTweetPoll(secondary, question2);
 
         this.tweetPoll.getHashTags().add(hashTag1);
         this.tweetPoll.getHashTags().add(hashTag2);
@@ -150,7 +174,7 @@ public class TestFrontEndService extends AbstractSpringSecurityContext{
         final Question question3 = createQuestion("Question 2", "");
         createQuestionAnswer("yes", question3, "12345");
         createQuestionAnswer("no", question3, "12346");
-        this.tweetPoll = createPublishedTweetPoll(secondary.getAccount(), question3);
+        this.tweetPoll = createPublishedTweetPoll(secondary, question3);
 
         this.tweetPoll.getHashTags().add(hashTag1);
         this.tweetPoll.getHashTags().add(hashTag2);
@@ -161,7 +185,7 @@ public class TestFrontEndService extends AbstractSpringSecurityContext{
         final Question question4 = createQuestion("Question 3", "");
         createQuestionAnswer("yes", question4, "12345");
         createQuestionAnswer("no", question4, "12346");
-        this.tweetPoll = createPublishedTweetPoll(secondary.getAccount(), question4);
+        this.tweetPoll = createPublishedTweetPoll(secondary, question4);
 
         this.tweetPoll.getHashTags().add(hashTag1);
         this.tweetPoll.getHashTags().add(hashTag4);
@@ -172,7 +196,7 @@ public class TestFrontEndService extends AbstractSpringSecurityContext{
         final Question question5 = createQuestion("Question 4", "");
         createQuestionAnswer("yes", question5, "12345");
         createQuestionAnswer("no", question5, "12346");
-        this.tweetPoll = createPublishedTweetPoll(secondary.getAccount(), question5);
+        this.tweetPoll = createPublishedTweetPoll(secondary, question5);
 
         this.tweetPoll.getHashTags().add(hashTag4);
         this.tweetPoll.getHashTags().add(hashTag5);
@@ -182,7 +206,7 @@ public class TestFrontEndService extends AbstractSpringSecurityContext{
         final Question question6 = createQuestion("Question 5", "");
         createQuestionAnswer("yes", question6, "12345");
         createQuestionAnswer("no", question6, "12346");
-        this.tweetPoll = createPublishedTweetPoll(secondary.getAccount(), question6);
+        this.tweetPoll = createPublishedTweetPoll(secondary, question6);
 
         this.tweetPoll.getHashTags().add(hashTag3);
         this.tweetPoll.getHashTags().add(hashTag4);
@@ -201,7 +225,7 @@ public class TestFrontEndService extends AbstractSpringSecurityContext{
     @Test
     public void testRegisterAccessRateVotedLike() throws EnMeNoResultsFoundException, EnMeExpcetion{
          final Question question = createQuestion("Who are you?", "");
-         final TweetPoll tp = createPublishedTweetPoll(getSpringSecurityLoggedUserAccount().getAccount(), question);
+         final TweetPoll tp = createPublishedTweetPoll(getSpringSecurityLoggedUserAccount(), question);
          final String ipAddress = "192.168.1.81";
          flushIndexes();
          // I like it vote.
@@ -347,7 +371,7 @@ public class TestFrontEndService extends AbstractSpringSecurityContext{
 
         
         final HashTag hashtag = createHashTag("continents", 350L); 
-	    System.out.println(hashtag.getHashTag());    		
+	    //System.out.println(hashtag.getHashTag());
 		Assert.assertNotNull(hashtag);
 		Assert.assertNotNull(hashtag.getHashTagId());
 		Assert.assertNotNull(hashtag.getHashTag());
@@ -371,5 +395,43 @@ public class TestFrontEndService extends AbstractSpringSecurityContext{
     */
     public void setFrontEndService(IFrontEndService frontEndService) {
         this.frontEndService = frontEndService;
+    }
+
+    /**
+     * Retrieve last items published by {@link UserAccount}
+     * @throws EnMeNoResultsFoundException
+     * @throws NoSuchAlgorithmException
+     * @throws UnsupportedEncodingException
+     */
+    @Test
+    public void testGetLastItemsPublishedFromUserAccount() throws  EnMeNoResultsFoundException, NoSuchAlgorithmException, UnsupportedEncodingException{
+    	final Account account = createAccount();
+    	final UserAccount userAccount1 = createUserAccount("user1", account );
+    	final UserAccount userAccount2 = createUserAccount("user2", account);
+    	final DateTime dt = new DateTime();
+
+        createDefaulPollWithPrivacy(createQuestionRandom(), userAccount1, dt.minusDays(2).toDate(), true, false); // Hidden
+        createDefaulPollWithPrivacy(createQuestionRandom(), userAccount1, new Date(), false, false);
+        createDefaulPollWithPrivacy(createQuestionRandom(), userAccount1, dt.minusDays(2).toDate(), false, false);
+        createDefaulPollWithPrivacy(createQuestionRandom(), userAccount1, dt.minusDays(4).toDate(), false, false);
+        createDefaulPollWithPrivacy(createQuestionRandom(), userAccount1, new Date(), false, false);
+        // User 2
+        createDefaulPollWithPrivacy(createQuestionRandom(), userAccount2, new Date(), true, false); // Hidden
+        createDefaulPollWithPrivacy(createQuestionRandom(), userAccount2, dt.minusDays(1).toDate(), true, false); // Hidden
+
+        // Step 1 - Retrieve last items published by user 1 and 2
+        final List<HomeBean> itemsByUser = this.frontEndService.getLastItemsPublishedFromUserAccount(userAccount1.getUsername(), 10, false, request);
+        Assert.assertEquals("Last items published by user 1 should be equals", 4, itemsByUser.size());
+
+        final List<HomeBean> itemsByUser2 = this.frontEndService.getLastItemsPublishedFromUserAccount(userAccount2.getUsername(), 10, false, request);
+        Assert.assertEquals("Last items published by user 1 should be equals", 0, itemsByUser2.size());
+
+        // Step 2 - Check the items
+        // Retrieve hidden polls by user
+        final List<Poll> hiddenPollsByUser1 = getPollDao().getHiddenPollbyUser(true, userAccount1, 10, 0);
+        Assert.assertEquals("Last items published by user 1 should be equals", 1, hiddenPollsByUser1.size());
+
+        final List<Poll> hiddenPollsByUser2 = getPollDao().getHiddenPollbyUser(true, userAccount2, 10, 0);
+        Assert.assertEquals("Last items published by user 1 should be equals", 2, hiddenPollsByUser2.size());
     }
 }

@@ -236,6 +236,7 @@ public class SearchUtils {
     * @throws Exception
     */
     public static Document createTextDocument(final File file) throws Exception {
+    	//FIXME: 'FileReader' is never closed
         final String docText = new FileReader(file).toString();
         final Document doc = SearchUtils.addFields(file, docText);
         return doc;
@@ -255,10 +256,10 @@ public class SearchUtils {
             IOException {
         final Directory directory = directoryStore.getDirectory();
         log.debug("Get Directory ----------" + directory.toString());
-        if(indexWriter != null){
-        indexWriter.close();
+        if (indexWriter != null){
+            indexWriter.close();
         }
-        log.debug("Index Directory is locked?  ----------> " + indexWriter.isLocked(directory));
+        //log.debug("Index Directory is locked?  ----------> " + indexWriter.isLocked(directory));
         indexWriter = new IndexWriter(directory, new StandardAnalyzer(
                 SearchUtils.LUCENE_VERSION), true,
                 IndexWriter.MaxFieldLength.UNLIMITED);

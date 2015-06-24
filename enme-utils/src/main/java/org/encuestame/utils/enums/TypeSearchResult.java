@@ -18,7 +18,7 @@ package org.encuestame.utils.enums;
  * @since Mar 23, 2011
  */
 public enum TypeSearchResult {
-    TWEETPOLL, PROFILE, POLL, SURVEY, ATTACHMENT, QUESTION, HASHTAG, HASHTAGRATED, SOCIALNETWORK, HITS, VOTES, ALL, 
+    TWEETPOLL, PROFILE, POLL, SURVEY, ATTACHMENT, QUESTION, HASHTAG, HASHTAGRATED, SOCIALNETWORK, HITS, VOTES, ALL, COMMENT, TWEETPOLLRESULT, POLLRESULT,
 
     TypeSearchResult(){
 
@@ -31,6 +31,7 @@ public enum TypeSearchResult {
         String type = "";
         if (this == TWEETPOLL) { type = "TWEETPOLL"; }
         else if (this == PROFILE) { type = "PROFILE"; }
+        else if (this == COMMENT) { type = "COMMENT"; }
         else if (this == POLL) { type = "POLL"; }
         else if (this == SURVEY) { type = "SURVEY"; }
         else if (this == ATTACHMENT) { type = "ATTACHMENT"; }
@@ -40,7 +41,27 @@ public enum TypeSearchResult {
         else if (this == SOCIALNETWORK) { type = "SOCIALNETWORK"; }
         else if (this == HITS) { type = "HITS"; }
         else if (this == VOTES) { type = "VOTES"; }
+        else if (this == TWEETPOLLRESULT) { type = "TWEETPOLLRESULT"; }
+        else if (this == POLLRESULT) { type = "POLLRESULT"; }
         else if (this == ALL) { type = "ALL"; }
+        return type;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public String toWidget() {
+        String type = "";
+        if (this == TWEETPOLL) { type = "tweetpoll"; }
+        else if (this == PROFILE) { type = "profile"; }
+        else if (this == POLL) { type = "poll"; }
+        else if (this == SURVEY) { type = "survey"; }
+        else if (this == HASHTAG) { type = "hashtag"; }
+        else if (this == HASHTAGRATED) { type = "hashtagrated"; }
+        else if (this == SOCIALNETWORK) { type = "socialnetwork"; }
+        else if (this == TWEETPOLLRESULT) { type = "tweetpollresult"; }
+        else if (this == POLLRESULT) { type = "pollresult"; }
         return type;
     }
 
@@ -53,14 +74,33 @@ public enum TypeSearchResult {
         if (null == type) { return null; }
         else if (type.equals(TWEETPOLL)) { return "tweetpoll"; }
         else if (type.equals(PROFILE)) { return "profile"; }
+        else if (type.equals(COMMENT)) { return "comment"; }
         else if (type.equals(POLL)) { return "poll"; }
         else if (type.equals(SURVEY)) { return "survey"; }
         else if (type.equals(HASHTAG)) { return "tag"; }
-        else if (type.equals(HASHTAGRATED)) { return "hashtagRated"; }
+        else if (type.equals(HASHTAGRATED)) { return "hashtagrated"; }
         else if (type.equals(SOCIALNETWORK)) { return "socialnetwork"; }
         else if (type.equals(HITS)) { return "hits"; }
         else if (type.equals(VOTES)) { return "votes"; }
+        else if (type.equals(TWEETPOLLRESULT)) { return "tweetpollresult"; }
+        else if (type.equals(POLLRESULT)) { return "pollresult"; }
         else if (type.equals(ALL)) { return "all"; }
+        else return null;
+    }
+
+    /**
+     * The css class to be appended into the embed code.
+      * @param type
+     * @return
+     */
+    public static String getCSSClass(final TypeSearchResult type ){
+        if (null == type) { return null; }
+        else if (type.equals(POLL)) { return "enme-poll-form"; }
+        else if (type.equals(POLLRESULT)) { return "enme-poll-vote"; }
+        else if (type.equals(TWEETPOLLRESULT)) { return "enme-tp-vote"; }
+        else if (type.equals(TWEETPOLL)) { return "enme-tp-form"; }
+        else if (type.equals(PROFILE)) { return "enme-profile"; }
+        else if (type.equals(HASHTAG)) { return "enme-hashtag"; }
         else return null;
     }
 
@@ -78,11 +118,14 @@ public enum TypeSearchResult {
         else if (type.equalsIgnoreCase("ATTACHMENT")) { return ATTACHMENT; }
         else if (type.equalsIgnoreCase("QUESTION")) { return QUESTION; }
         else if (type.equalsIgnoreCase("HASHTAG")) { return HASHTAG; }
+        else if (type.equalsIgnoreCase("COMMENT")) { return COMMENT; }
         else if (type.equalsIgnoreCase("HASHTAGRATED")) { return HASHTAGRATED; }
         else if (type.equalsIgnoreCase("SOCIALNETWORK")) { return SOCIALNETWORK; }
         else if (type.equalsIgnoreCase("HITS")) { return HITS; }
-        else if (type.equalsIgnoreCase("VOTES")) { return VOTES; }        
-        else if (type.equalsIgnoreCase("ALL")) { return ALL; }        
+        else if (type.equalsIgnoreCase("VOTES")) { return VOTES; }
+        else if (type.equalsIgnoreCase("TWEETPOLLRESULT")) { return TWEETPOLLRESULT; }
+        else if (type.equalsIgnoreCase("POLLRESULT")) { return POLLRESULT; }
+        else if (type.equalsIgnoreCase("ALL")) { return ALL; }
         else return null;
     }
 }

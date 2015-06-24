@@ -12,8 +12,13 @@
  */
 package org.encuestame.core.cron;
 
+import javax.annotation.Resource;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.encuestame.core.config.EnMePlaceHolderConfigurer;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 
 /**
  * Reindex Job.
@@ -21,6 +26,7 @@ import org.apache.commons.logging.LogFactory;
  * @since Jul 8, 2010 9:49:41 PM
  * @version $Id:$
  */
+
 public class ReIndexJob {
 
     /**
@@ -31,15 +37,18 @@ public class ReIndexJob {
     /**
      * {@link IndexRebuilder}.
      */
+    @Resource(name = "indexRebuilder")
     private IndexRebuilder indexRebuilder;
 
     /**
      * Reindex.
      */
+    @Scheduled(cron = "${cron.reindex}")
     public void reindex(){
-        this.reindexData();
+        if (EnMePlaceHolderConfigurer.getSystemInitialized()) {
+            this.reindexData();
+        }
     }
-
 
     /**
      * Reindex Data.
@@ -47,9 +56,16 @@ public class ReIndexJob {
     private void reindexData(){
         try {
             getIndexRebuilder().reindexEntities();
+            log.info("reindexing entitities ...");
         } catch (Exception e) {
+            //e.printStackTrace();
+            log.error(e);
             ReIndexJob.log.error("Error Reindexing "+e.getMessage());
         }
+    }
+
+    public void setIndexRebuilder(IndexRebuilder indexRebuilder) {
+        this.indexRebuilder = indexRebuilder;
     }
 
     /**
@@ -59,10 +75,4 @@ public class ReIndexJob {
         return indexRebuilder;
     }
 
-    /**
-     * @param indexRebuilder the indexRebuilder to set
-     */
-    public void setIndexRebuilder(final IndexRebuilder indexRebuilder) {
-        this.indexRebuilder = indexRebuilder;
-    }
 }

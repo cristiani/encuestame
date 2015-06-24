@@ -4,27 +4,16 @@
     <parent>
         <groupId>org.encuestame</groupId>
         <artifactId>encuestame</artifactId>
-        <version>1.147-M2-SNAPSHOT</version>
+        <version>1.5.3-SNAPSHOT</version>
     </parent>
     <artifactId>encuestame-core</artifactId>
     <packaging>jar</packaging>
-    <name>encuestame core</name>
+    <name>Encuestame Core</name>
     <build>
         <filters>
             <filter>../env/${env}.properties</filter>
         </filters>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>${java-version}</source>
-                    <target>${java-version}</target>
-                    <encoding>ISO-8859-1</encoding>
-                    <showDeprecation>true</showDeprecation>
-                    <compilerArgument>-Xlint:unchecked</compilerArgument>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -138,7 +127,7 @@
         </dependency>
         <dependency>
             <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
+            <artifactId>${servlet-api-artifact}</artifactId>
         </dependency>
         <dependency>
             <groupId>commons-httpclient</groupId>
@@ -250,10 +239,6 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-webmvc</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-web</artifactId>
-        </dependency>
         <!-- Spring Integration -->
         <dependency>
             <groupId>org.springframework.integration</groupId>
@@ -271,10 +256,6 @@
             <groupId>org.springframework.integration</groupId>
             <artifactId>spring-integration-test</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.integration</groupId>
-            <artifactId>spring-integration-twitter</artifactId>
         </dependency>
         <!-- Spring Security -->
         <dependency>
@@ -343,18 +324,17 @@
             <artifactId>commons-validator</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.springframework.integration</groupId>
-            <artifactId>spring-integration-file</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.googlecode.json-simple</groupId>
             <artifactId>json-simple</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.codehaus.jackson</groupId>
-            <artifactId>jackson-mapper-asl</artifactId>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
         </dependency>
-
+         <dependency>
+             <groupId>com.fasterxml.jackson.core</groupId>
+             <artifactId>jackson-databind</artifactId>
+         </dependency>
         <dependency>
             <groupId>javax.inject</groupId>
             <artifactId>javax.inject</artifactId>

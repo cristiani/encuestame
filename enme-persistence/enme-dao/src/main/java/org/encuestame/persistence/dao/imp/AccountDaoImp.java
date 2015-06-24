@@ -21,17 +21,19 @@ import org.apache.commons.collections.set.ListOrderedSet;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.encuestame.persistence.dao.IAccountDao;
 import org.encuestame.persistence.domain.security.Account;
+import org.encuestame.persistence.domain.security.HelpPage;
 import org.encuestame.persistence.domain.security.SocialAccount;
 import org.encuestame.persistence.domain.security.UserAccount;
 import org.encuestame.persistence.exception.EnMeExpcetion;
 import org.encuestame.persistence.exception.EnMeNoResultsFoundException;
 import org.encuestame.utils.social.SocialProvider;
-import org.hibernate.Criteria;
-import org.hibernate.FetchMode;
+import org.encuestame.utils.social.SocialUserProfile;
 import org.hibernate.HibernateException;
 import org.hibernate.SessionFactory;
 import org.hibernate.criterion.DetachedCriteria;
 import org.hibernate.criterion.Order;
+import org.hibernate.Criteria;
+import org.hibernate.FetchMode;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,7 +63,7 @@ public class AccountDaoImp extends AbstractSocialAccount implements IAccountDao 
     * (non-Javadoc)
     * @see org.encuestame.persistence.dao.IAccountDao#findAll()
     */
-    public final List<UserAccount> findAll() throws HibernateException {
+    public final List findAll() throws HibernateException {
         return getHibernateTemplate().find("from UserAccount");
     }
 
@@ -69,7 +71,7 @@ public class AccountDaoImp extends AbstractSocialAccount implements IAccountDao 
      * (non-Javadoc)
      * @see org.encuestame.persistence.dao.IAccountDao#retrieveListOwnerUsers(org.encuestame.persistence.domain.security.Account, java.lang.Integer, java.lang.Integer)
      */
-    public final List<UserAccount> retrieveListOwnerUsers(final Account account,
+    public final List retrieveListOwnerUsers(final Account account,
                final Integer maxResults, final Integer start){
         final DetachedCriteria criteria = DetachedCriteria.forClass(UserAccount.class);
         criteria.add(Restrictions.eq("account", account));
@@ -83,7 +85,7 @@ public class AccountDaoImp extends AbstractSocialAccount implements IAccountDao 
      * (non-Javadoc)
      * @see org.encuestame.persistence.dao.IAccountDao#retrieveListUserUnconfirmedByAccount(org.encuestame.persistence.domain.security.Account)
      */
-    public final List<UserAccount> retrieveListUserUnconfirmedByAccount(final Account account) {
+    public final List retrieveListUserUnconfirmedByAccount(final Account account) {
      final DetachedCriteria criteria = DetachedCriteria.forClass(UserAccount.class);
      criteria.add(Restrictions.isNotNull("inviteCode"));
      return getHibernateTemplate().findByCriteria(criteria);
@@ -95,8 +97,7 @@ public class AccountDaoImp extends AbstractSocialAccount implements IAccountDao 
      */
     public final Long retrieveTotalUsers(final Account account){
          Long resultsSize = 0L;
-         final List list =  getHibernateTemplate().findByNamedParam("select count(*) from UserAccount "
-                 +" WHERE account = :account", "account", account);
+         final List list =  getHibernateTemplate().findByNamedParam("select count(*) from UserAccount WHERE account = :account", "account", account);
          if (list.get(0) instanceof Long){
              log.debug("instace of Long");
              resultsSize = (Long) list.get(0);
@@ -151,7 +152,7 @@ public class AccountDaoImp extends AbstractSocialAccount implements IAccountDao 
     * (non-Javadoc)
     * @see org.encuestame.persistence.dao.IAccountDao#searchUsersByEmail(java.lang.String)
     */
-    public List<UserAccount> searchUsersByEmail(final String email){
+    public List searchUsersByEmail(final String email){
         final DetachedCriteria criteria = DetachedCriteria.forClass(UserAccount.class);
         criteria.add(Restrictions.like("userEmail", email) );
         return   getHibernateTemplate().findByCriteria(criteria);
@@ -159,20 +160,20 @@ public class AccountDaoImp extends AbstractSocialAccount implements IAccountDao 
 
     /**
      * Get Total of TweetPoll By User Editor.
-     * @param userSecondary
+     * @param userId
      * @return
      */
-    public List<Long> getTotalTweetPollByUser(final Long userId){ //editorOwner
+    public List getTotalTweetPollByUser(final Long userId){ //editorOwner
         return getHibernateTemplate().findByNamedParam("select count(tweetPollId) "
                +" from TweetPoll where editorOwner.id = :editorOwner", "editorOwner", userId);
     }
 
     /**
      * Get Total of TweetPoll By User Editor.
-     * @param userSecondary
+     * @param userId
      * @return
      */
-    public List<Long> getTotalPollByUser(final Long userId){ //editorOwner
+    public List getTotalPollByUser(final Long userId) { //editorOwner
         return getHibernateTemplate().findByNamedParam("select count(pollId) "
                +" from Poll where editorOwner.id = :editorOwner", "editorOwner", userId);
     }
@@ -202,9 +203,69 @@ public class AccountDaoImp extends AbstractSocialAccount implements IAccountDao 
         final DetachedCriteria criteria = DetachedCriteria.forClass(Account.class);
         criteria.add(Restrictions.eq("enabled", status));
         criteria.setProjection(Projections.id());
-        final List<Long> accountsId = getHibernateTemplate().findByCriteria(criteria);
+        final List accountsId = getHibernateTemplate().findByCriteria(criteria);
         return accountsId;
     }
+
+    /**
+     * Disconnect Account Connection.
+     * @param accountId
+     * @param provider
+     * @throws EnMeNoResultsFoundException
+     */
+    public void disconnect(String accountId, SocialProvider provider) throws EnMeNoResultsFoundException {
+        final SocialAccount ac = this.getAccountConnection(accountId, provider);
+        if(ac == null){
+            throw new EnMeNoResultsFoundException("connection not found");
+        } else {
+            getHibernateTemplate().delete(ac);
+        }
+    }
+
+    /**
+     * Create new social account.
+     * @param socialAccountId
+     * @param token
+     * @param tokenSecret
+     * @param expiresToken
+     * @param username
+     * @param socialUserProfile
+     * @param socialProvider
+     * @param userAccount
+     * @return
+     */
+    public SocialAccount createSocialAccount(
+            final String socialAccountId,
+            final String token,
+            final String tokenSecret,
+            final String expiresToken,
+            final String username,
+            final SocialUserProfile socialUserProfile,
+            final SocialProvider socialProvider,
+            final UserAccount userAccount) {
+        final SocialAccount socialAccount = new SocialAccount();
+        socialAccount.setAccessToken(token);
+        socialAccount.setSecretToken(tokenSecret);
+        socialAccount.setAccount(userAccount.getAccount());
+        socialAccount.setUserOwner(userAccount);
+        socialAccount.setExpires(expiresToken);
+        socialAccount.setAccounType(socialProvider);
+        socialAccount.setAddedAccount(new Date());
+        socialAccount.setVerfied(Boolean.TRUE);
+        socialAccount.setSocialAccountName(socialUserProfile.getUsername());
+        socialAccount.setType(SocialProvider.getTypeAuth(socialProvider));
+        socialAccount.setUpgradedCredentials(new Date());
+        socialAccount.setSocialProfileId(socialUserProfile.getId());
+        socialAccount.setPublicProfileUrl(socialUserProfile.getProfileUrl());
+        socialAccount.setPrictureUrl(socialUserProfile.getProfileImageUrl()); //TODO: repeated
+        socialAccount.setProfilePictureUrl(socialUserProfile.getProfileImageUrl());
+        socialAccount.setEmail(socialUserProfile.getEmail());
+        socialAccount.setProfileThumbnailPictureUrl(socialUserProfile.getProfileImageUrl());
+        socialAccount.setRealName(socialUserProfile.getRealName());
+        this.saveOrUpdate(socialAccount);
+        return socialAccount;
+    }
+
 
     /*
      * (non-Javadoc)
@@ -314,7 +375,7 @@ public class AccountDaoImp extends AbstractSocialAccount implements IAccountDao 
         final DetachedCriteria criteria = DetachedCriteria.forClass(UserAccount.class);
         criteria.add(Restrictions.eq("userStatus", status));
         criteria.add(Restrictions.between("enjoyDate", beforeDate, afterDate));
-        final List<UserAccount> statusUserAccount = getHibernateTemplate().findByCriteria(criteria);
+        final List statusUserAccount = getHibernateTemplate().findByCriteria(criteria);
         return statusUserAccount;
     }
 
@@ -322,10 +383,23 @@ public class AccountDaoImp extends AbstractSocialAccount implements IAccountDao 
      * (non-Javadoc)
      * @see org.encuestame.persistence.dao.IAccountDao#getUserAccounts(java.lang.Boolean)
      */
-    public List<UserAccount> getUserAccounts(final Boolean status){
+    public List getUserAccounts(final Boolean status) {
         final DetachedCriteria criteria = DetachedCriteria.forClass(UserAccount.class);
         criteria.add(Restrictions.eq("userStatus", status));
-        return (List<UserAccount>) getHibernateTemplate().findByCriteria(criteria);
+        return getHibernateTemplate().findByCriteria(criteria);
+    }
+
+    /**
+     *
+     * @param pagePath
+     * @param user
+     * @return
+     */
+    public List<HelpPage> getHelpReference(final String pagePath, final UserAccount user) {
+        final DetachedCriteria criteria = DetachedCriteria.forClass(HelpPage.class);
+        criteria.add(Restrictions.eq("userAccount", user));
+        criteria.add(Restrictions.eq("pagePath", pagePath));
+        return (List<HelpPage>) getHibernateTemplate().findByCriteria(criteria);
     }
 
 

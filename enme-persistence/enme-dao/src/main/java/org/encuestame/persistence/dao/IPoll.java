@@ -23,6 +23,7 @@ import org.encuestame.persistence.domain.survey.PollFolder;
 import org.encuestame.persistence.domain.survey.PollResult;
 import org.encuestame.utils.enums.SearchPeriods;
 import org.encuestame.utils.enums.TypeSearchResult;
+import org.encuestame.utils.web.search.PollSearchBean;
 import org.hibernate.HibernateException;
 
 /**
@@ -159,7 +160,7 @@ public interface IPoll extends IBaseDao {
       * @return
       */
      List<Poll> getPolls(final Integer maxResults,
-             final Integer start, final Date range);
+             final Integer start, final SearchPeriods range);
 
      /**
       * Retrieve poll mark as favorites.
@@ -252,7 +253,7 @@ public interface IPoll extends IBaseDao {
      * @param poll
      * @return
      */
-    PollResult validateVoteIP(
+    Integer validateVoteIP(
     		final String ip,
             final Poll poll);
 
@@ -294,6 +295,95 @@ public interface IPoll extends IBaseDao {
 	 * @param period
 	 * @return
 	 */
-	List<Object[]> getPollsRangeStats(
-	            final String tagName, final SearchPeriods period);
+	List<Object[]> getPollsRangeStats(final String tagName, final SearchPeriods period);
+
+	/**
+	 * Find all Polls by {@link Account}
+	 * @param account
+	 * @param maxResults
+	 * @param start
+	 * @return
+	 */
+	List<Poll> findAllPollByAccount(final Account account,final Integer maxResults, final Integer start);
+
+	/**
+	 *
+	 * @param bean
+	 * @param userId
+	 * @return
+	 */
+	List<Poll> retrievePollsByUserId(final PollSearchBean bean, final Long userId);
+
+	/**
+	 * Retrieve all {@link Poll} created today.
+	 * @param bean
+	 * @param userId
+	 * @return
+	 */
+	List<Poll> retrievePollsToday(final PollSearchBean bean, final Long userId);
+
+	/**
+	 * Retrieve the {@link Poll} created last week.
+	 * @param bean
+	 * @param userId
+	 * @return
+	 */
+	List<Poll> retrievePollsLastWeek(final PollSearchBean bean, final Long userId);
+
+	/**
+	 * Retrieve favourites {@link Poll}.
+	 * @param bean
+	 * @param userId
+	 * @return
+	 */
+	List<Poll> retrieveFavouritesPoll(final PollSearchBean bean, final Long userId);
+
+	/**
+	 * Retrieve scheduled {@link Poll}.
+	 * @param bean
+	 * @param userId
+	 * @return
+	 */
+	List<Poll> retrieveScheduledPoll(final PollSearchBean bean, final Long userId);
+
+	/**
+	 * Retrieve {@link Poll} by date.
+	 * @param bean
+	 * @param userId
+	 * @return
+	 */
+	List<Poll> retrievePollByDate(final PollSearchBean bean, final Long userId, final Date startDate);
+
+
+	/**
+	 * Return a list of votes by {@link Poll}
+	 * @param ip
+	 * @param poll
+	 * @return
+	 */
+	List<PollResult> getListvalidateVoteIP(
+	            final String ip,
+	            final Poll poll);
+
+	/**
+	 *  Retrieve Folders by keyword.
+	 * @param keyword
+	 * @param userAcc
+	 * @return
+	 */
+	List<PollFolder> getPollFolderByKeyword(final String keyword,
+			final UserAccount userAcc);
+
+	/**
+	 * Retrieve all hidden polls filtered by User
+	 * @param isHidden
+	 * @param user
+	 * @param max
+	 * @param start
+	 * @return
+	 */
+	List<Poll> getHiddenPollbyUser(final Boolean isHidden,
+			final UserAccount user,
+			final Integer max,
+			final Integer start);
 }

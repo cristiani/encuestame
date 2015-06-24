@@ -16,6 +16,7 @@ package org.encuestame.test.business.service;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -33,7 +34,6 @@ import org.encuestame.persistence.exception.EnmeNotAllowedException;
 import org.encuestame.test.business.security.AbstractSpringSecurityContext;
 import org.encuestame.utils.categories.test.DefaultTest;
 import org.encuestame.utils.enums.CommentOptions;
-import org.encuestame.utils.enums.CommentStatus;
 import org.encuestame.utils.enums.CommentsSocialOptions;
 import org.encuestame.utils.enums.SearchPeriods;
 import org.encuestame.utils.enums.TypeSearchResult;
@@ -44,6 +44,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import com.mchange.util.AssertException;
 
 /**
  * Test for {@link CommentService}.
@@ -115,11 +117,12 @@ public class TestCommentService extends AbstractSpringSecurityContext {
         // comment on Tweetpoll
 		createDefaultTweetPollCommentWithStatus("dumb tweetPoll question",
 				tweetPoll, getSpringSecurityLoggedUserAccount(),
-				CommentStatus.APPROVE, this.creationDate.toDate());
-
+				CommentOptions.APPROVE, this.creationDate.toDate());
+		final List<CommentOptions> opt = new ArrayList<CommentOptions>();
+		opt.add(CommentOptions.ALL);
         createDefaultTweetPollComment("dumb tweetPoll question", tweetPoll, getSpringSecurityLoggedUserAccount());
 
-        final List<CommentBean> commentsbyUser = getCommentsOperationsService().getCommentsbyUser(this.MAX_RESULTS, this.START, CommentStatus.ALL);
+        final List<CommentBean> commentsbyUser = getCommentsOperationsService().getCommentsbyUser(this.MAX_RESULTS, this.START, opt);
         assertEquals("Should be equals", 6, commentsbyUser.size());
 
     }
@@ -203,46 +206,39 @@ public class TestCommentService extends AbstractSpringSecurityContext {
 	public void testTweetPollCommentsByStatusAndType() {
 		final int totalCommentsApprove = 10;
 		final int totalCommentsSpam = 5;
-		final int totalCommentsRestricted = 15;
 
 		for (int i = 0; i < totalCommentsApprove; i++) {
 			createDefaultTweetPollCommentWithStatus("Comment" + i,
 					this.tweetPoll, getSpringSecurityLoggedUserAccount(),
-					CommentStatus.APPROVE, this.creationDate.toDate());
+					CommentOptions.APPROVE, this.creationDate.toDate());
 		}
 
 		for (int i = 0; i < totalCommentsSpam; i++) {
 			createDefaultTweetPollCommentWithStatus(
 						"Comment" + i, this.tweetPoll, getSpringSecurityLoggedUserAccount(),
-						CommentStatus.SPAM, this.creationDate.toDate());
+						CommentOptions.SPAM, this.creationDate.toDate());
 		}
-
-//		for (int i = 0; i < totalCommentsRestricted; i++) {
-//			createDefaultTweetPollCommentWithStatus("Comment" + i,
-//					this.tweetPoll, getSpringSecurityLoggedUserAccount(),
-//					CommentOptions.RESTRICT, this.creationDate.toDate());
-//		}
 
 		final List<CommentBean> tweetPollCommentsApproved = getCommentsOperationsService()
 				.retrieveCommentsByTypeAndStatus(
 						this.tweetPoll.getTweetPollId(),
 						 TypeSearchResult.TWEETPOLL, 20, 0,
-						 CommentStatus.APPROVE, null);
+						 CommentOptions.APPROVE, null);
 		assertEquals("Should be equals", 10, tweetPollCommentsApproved.size());
 
 		final List<CommentBean> tweetPollCommentsSpam = getCommentsOperationsService()
 				.retrieveCommentsByTypeAndStatus(
 						this.tweetPoll.getTweetPollId(),
 						TypeSearchResult.TWEETPOLL, 20, 0,
-						CommentStatus.SPAM, null);
+						CommentOptions.SPAM, null);
 		assertEquals("Should be equals", 5, tweetPollCommentsSpam.size());
 
-//		final List<CommentBean> tweetPollCommentsRestricted = getCommentsOperationsService()
-//				.retrieveCommentsByTypeAndStatus(
-//						this.tweetPoll.getTweetPollId(),
-//						 TypeSearchResult.TWEETPOLL, 20, 0,
-//						CommentOptions.RESTRICT, null);
-//		assertEquals("Should be equals", 15, tweetPollCommentsRestricted.size());
+		final List<CommentBean> alltweetPollComments = getCommentsOperationsService()
+				.retrieveCommentsByTypeAndStatus(
+						this.tweetPoll.getTweetPollId(),
+						 TypeSearchResult.TWEETPOLL, 20, 0,
+						CommentOptions.ALL, null);
+		assertEquals("Should be equals", 19, alltweetPollComments.size());
 
 	}
 
@@ -252,20 +248,202 @@ public class TestCommentService extends AbstractSpringSecurityContext {
 	@Test
 	public void testPollCommentsByStatusAndType() {
 		final int totalCommentsSpam = 5;
-		System.out.println("fecha --> " + this.creationDate.toDate());
+		//System.out.println("fecha --> " + this.creationDate.toDate());
 		for (int i = 0; i < totalCommentsSpam; i++) {
 			createDefaultPollCommentWithStatus("Comment" + i, this.poll,
-					getSpringSecurityLoggedUserAccount(), CommentStatus.SPAM,
+					getSpringSecurityLoggedUserAccount(), CommentOptions.SPAM,
 					this.creationDate.toDate());
 		}
 
 		final List<CommentBean> tweetPollCommentsApproved = getCommentsOperationsService()
 				.retrieveCommentsByTypeAndStatus(this.poll.getPollId(),
-						TypeSearchResult.POLL, 20, 0, CommentStatus.SPAM,
+						TypeSearchResult.POLL, 20, 0, CommentOptions.SPAM,
 						SearchPeriods.TWENTYFOURHOURS);
 
 		assertEquals("Should be equals", 5, tweetPollCommentsApproved.size());
 	}
+
+	/**
+	 * Retrieve total {@link Comment}
+	 */
+	@Test
+	public void testTotalCommentsByType(){
+		this.createPollComments(); // Create Poll Comments.
+		this.createTweetPollComments(); // Create TweetPoll Comments.
+		final long totalTweetPollComments = getCommentsOperations()
+				.getTotalCommentsbyItem(tweetPoll.getTweetPollId(), TypeSearchResult.TWEETPOLL,
+						CommentOptions.ALL, SearchPeriods.ALLTIME);
+		assertEquals("Should be equals", 13, totalTweetPollComments);
+
+		final long totalTweetPollSpamComments = getCommentsOperations()
+				.getTotalCommentsbyItem(tweetPoll.getTweetPollId(), TypeSearchResult.TWEETPOLL,
+						CommentOptions.SPAM, SearchPeriods.ALLTIME);
+		assertEquals("Should be equals", 3, totalTweetPollSpamComments);
+
+		// Comments POLL
+
+		final long totalPollComments = getCommentsOperations()
+				.getTotalCommentsbyItem(poll.getPollId(),
+						TypeSearchResult.POLL, CommentOptions.ALL,
+						SearchPeriods.ALLTIME);
+		assertEquals("Should be equals", 10, totalPollComments);
+
+		final long totalPollRestrictedComments = getCommentsOperations()
+				.getTotalCommentsbyItem(poll.getPollId(),
+						TypeSearchResult.POLL, CommentOptions.RESTRICT,
+						SearchPeriods.ALLTIME);
+		assertEquals("Should be equals", 3, totalPollRestrictedComments);
+	}
+
+	/**
+	 * Retrieve Comments by Type and {@link SearchPeriods}.
+	 */
+	@Test
+	public void testTotalPollCommentsByTypeAndDateRange(){
+		this.createPollComments();
+		final long totalComments7Days = getCommentsOperations().getTotalCommentsbyItem(
+				this.poll.getPollId(), TypeSearchResult.POLL, CommentOptions.ALL,
+				SearchPeriods.SEVENDAYS);
+		assertEquals("Should be equals", 6, totalComments7Days);
+
+		final long totalCommentsSpam24Hours = getCommentsOperations().getTotalCommentsbyItem(
+				this.poll.getPollId(), TypeSearchResult.POLL, CommentOptions.SPAM,
+				SearchPeriods.TWENTYFOURHOURS);
+		assertEquals("Should be equals", 1, totalCommentsSpam24Hours);
+
+		final long totalAllComments24Hours = getCommentsOperations().getTotalCommentsbyItem(
+				this.poll.getPollId(), TypeSearchResult.POLL, CommentOptions.ALL,
+				SearchPeriods.TWENTYFOURHOURS);
+		assertEquals("Should be equals", 3, totalAllComments24Hours);
+
+		final long totalModerateComments30Days = getCommentsOperations().getTotalCommentsbyItem(
+				this.poll.getPollId(), TypeSearchResult.POLL, CommentOptions.MODERATE,
+				SearchPeriods.THIRTYDAYS);
+		assertEquals("Should be equals", 2, totalModerateComments30Days);
+
+		final long totalRestrictCommentsOneYear = getCommentsOperations().getTotalCommentsbyItem(
+				this.poll.getPollId(), TypeSearchResult.POLL, CommentOptions.RESTRICT,
+				SearchPeriods.ONEYEAR);
+		assertEquals("Should be equals", 2, totalRestrictCommentsOneYear);
+
+		final long totalAllComments = getCommentsOperations().getTotalCommentsbyItem(
+				this.poll.getPollId(), TypeSearchResult.POLL, CommentOptions.ALL,
+				SearchPeriods.ALLTIME);
+		assertEquals("Should be equals", 10, totalAllComments);
+	}
+
+
+	/**
+	 * Create Poll {@link Comment}
+	 */
+	private void createPollComments(){
+
+		createDefaultPollCommentWithStatus("my12", this.poll,
+				getSpringSecurityLoggedUserAccount(), CommentOptions.APPROVE,
+				creationDate.minusHours(5).toDate());
+
+				createDefaultPollCommentWithStatus("my13", this.poll,
+				getSpringSecurityLoggedUserAccount(), CommentOptions.APPROVE,
+				creationDate.minusHours(3).toDate());
+
+		createDefaultPollCommentWithStatus("my131", this.poll,
+				getSpringSecurityLoggedUserAccount(), CommentOptions.SPAM,
+				creationDate.minusHours(2).toDate());
+
+		createDefaultPollCommentWithStatus("my131", this.poll,
+				getSpringSecurityLoggedUserAccount(), CommentOptions.SPAM,
+				creationDate.minusHours(25).toDate());
+
+		createDefaultPollCommentWithStatus("my1", this.poll,
+				getSpringSecurityLoggedUserAccount(), CommentOptions.APPROVE,
+				creationDate.minusDays(3).toDate());
+
+		createDefaultPollCommentWithStatus("my14", this.poll,
+				getSpringSecurityLoggedUserAccount(), CommentOptions.MODERATE,
+				creationDate.minusDays(4).toDate());
+
+		createDefaultPollCommentWithStatus("my15", this.poll,
+				getSpringSecurityLoggedUserAccount(), CommentOptions.MODERATE,
+				creationDate.minusDays(10).toDate());
+
+		createDefaultPollCommentWithStatus("my16", this.poll,
+				getSpringSecurityLoggedUserAccount(), CommentOptions.RESTRICT,
+				creationDate.minusDays(20).toDate());
+
+		createDefaultPollCommentWithStatus("my168", this.poll,
+				getSpringSecurityLoggedUserAccount(), CommentOptions.RESTRICT,
+				creationDate.minusMonths(2).toDate());
+
+		createDefaultPollCommentWithStatus("my168", this.poll,
+				getSpringSecurityLoggedUserAccount(), CommentOptions.RESTRICT,
+				creationDate.minusYears(2).toDate());
+
+	}
+
+	/**
+	 * Create {@link TweetPoll} {@link Comment}
+	 */
+	private void createTweetPollComments(){
+		createDefaultTweetPollCommentWithStatus("tpoll1 ", this.tweetPoll,
+				getSpringSecurityLoggedUserAccount(), CommentOptions.MODERATE,
+				creationDate.minusHours(2).toDate());
+
+		createDefaultTweetPollCommentWithStatus("tpoll12 ", this.tweetPoll,
+				getSpringSecurityLoggedUserAccount(), CommentOptions.SPAM,
+				creationDate.minusHours(10).toDate());
+
+		createDefaultTweetPollCommentWithStatus("tpoll123 ", this.tweetPoll,
+				getSpringSecurityLoggedUserAccount(), CommentOptions.SPAM,
+				creationDate.toDate());
+
+		createDefaultTweetPollCommentWithStatus("tpoll124 ", this.tweetPoll,
+				getSpringSecurityLoggedUserAccount(), CommentOptions.RESTRICT,
+				creationDate.minusDays(2).toDate());
+
+		createDefaultTweetPollCommentWithStatus("tpoll124 ", this.tweetPoll,
+				getSpringSecurityLoggedUserAccount(), CommentOptions.MODERATE,
+				creationDate.minusDays(5).toDate());
+
+		createDefaultTweetPollCommentWithStatus("tpoll124 ", this.tweetPoll,
+				getSpringSecurityLoggedUserAccount(), CommentOptions.SPAM,
+				creationDate.minusDays(7).toDate());
+
+
+		createDefaultTweetPollCommentWithStatus("tpoll1245 ", this.tweetPoll,
+				getSpringSecurityLoggedUserAccount(), CommentOptions.MODERATE,
+				creationDate.minusDays(17).toDate());
+
+
+		createDefaultTweetPollCommentWithStatus("tpoll12455 ", this.tweetPoll,
+				getSpringSecurityLoggedUserAccount(), CommentOptions.APPROVE,
+				creationDate.minusMonths(6).toDate());
+
+
+		createDefaultTweetPollCommentWithStatus("tpoll1245567 ", this.tweetPoll,
+				getSpringSecurityLoggedUserAccount(), CommentOptions.RESTRICT,
+				creationDate.minusYears(2).toDate());
+
+	}
+
+	/**
+	 * Retrieve {@link TweetPoll} Comments by Type and {@link SearchPeriods}
+	 */
+	@Test
+	public void testTotalTweetPollCommentsByTypeAndDateRange(){
+		this.createTweetPollComments();
+		final long totalCommentsSpam24Hours = getCommentsOperations().getTotalCommentsbyItem(
+				this.tweetPoll.getTweetPollId(), TypeSearchResult.TWEETPOLL, CommentOptions.SPAM,
+				SearchPeriods.TWENTYFOURHOURS);
+		assertEquals("Should be equals", 2, totalCommentsSpam24Hours);
+
+		final long totalComments7Days = getCommentsOperations().getTotalCommentsbyItem(
+				this.tweetPoll.getTweetPollId(), TypeSearchResult.TWEETPOLL, CommentOptions.ALL,
+				SearchPeriods.SEVENDAYS);
+		assertEquals("Should be equals", 9, totalComments7Days);
+	}
+
+
+
 
     /**
      * @return the commentsOperationsService

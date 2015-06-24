@@ -12,10 +12,12 @@
  */
 package org.encuestame.business.setup;
 
+import javax.annotation.PostConstruct;
+
 import org.apache.log4j.Logger;
 import org.encuestame.core.config.EnMePlaceHolderConfigurer;
-import org.encuestame.core.service.DirectorySetupOperations;
 import org.encuestame.core.service.imp.MailServiceOperations;
+import org.encuestame.core.service.startup.DirectorySetupOperations;
 import org.encuestame.persistence.exception.EnMeStartupException;
 import org.encuestame.utils.DateUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +60,7 @@ public class ApplicationStartup implements StartupProcess {
      *
      * @see org.encuestame.business.setup.StartupProcess#startProcess()
      */
+    //@PostConstruct
     public void startProcess() throws EnMeStartupException {
         // check if root directory exist
         try {
@@ -75,6 +78,15 @@ public class ApplicationStartup implements StartupProcess {
                 // etc etc.
                 mailService.sendStartUpNotification(startupMessage.toString());
             }
+            //notify the system has been initialized
+            final String uuid = EnMePlaceHolderConfigurer.getConfigurationManager().getProperty("install.uuid");
+            if (uuid != null) {
+                EnMePlaceHolderConfigurer.setSystemInstalled(Boolean.TRUE);
+            } else {
+                EnMePlaceHolderConfigurer.setSystemInstalled(Boolean.FALSE);
+            }
+            EnMePlaceHolderConfigurer.setSystemInitialized(Boolean.TRUE);
+            this.displayVersionOnStartup();
             // check internet connection
             //if (EnMePlaceHolderConfigurer.getBooleanProperty(
             //        "setup.check.network").booleanValue()) {
@@ -92,7 +104,7 @@ public class ApplicationStartup implements StartupProcess {
             //}
         } catch (Exception e) {
             log.fatal("Error on Start Up: " + e.getMessage());
-            e.printStackTrace();
+            //e.printStackTrace();
             throw new EnMeStartupException(e);
         }
     }
@@ -122,7 +134,14 @@ public class ApplicationStartup implements StartupProcess {
      * @see org.encuestame.business.setup.StartupProcess#displayVersionOnStartup()
      */
     public void displayVersionOnStartup() {
-        // TODO Auto-generated method stub
+        System.out.println("ENCUESTAME ::  app version :: " + EnMePlaceHolderConfigurer.getProperty("app.version"));
+        System.out.println("ENCUESTAME ::  database version :: " + EnMePlaceHolderConfigurer.getProperty("app.database.version"));
+        System.out.println("ENCUESTAME ::  build version :: " + EnMePlaceHolderConfigurer.getProperty("app.build.number"));
+        System.out.println("ENCUESTAME ::  build time :: " + EnMePlaceHolderConfigurer.getProperty("app.build.timestamp"));
+        System.out.println("ENCUESTAME ::  build path :: " + EnMePlaceHolderConfigurer.getProperty("app.build.urlBuiltPath"));
+        System.out.println("ENCUESTAME ::  build revision :: " + EnMePlaceHolderConfigurer.getProperty("app.build.revision"));
+        System.out.println("ENCUESTAME ::  build repo url :: " + EnMePlaceHolderConfigurer.getProperty("app.build.urlPath"));
+        System.out.println("ENCUESTAME ::  build branch :: " + EnMePlaceHolderConfigurer.getProperty("app.build.branch"));
     }
 
     /**

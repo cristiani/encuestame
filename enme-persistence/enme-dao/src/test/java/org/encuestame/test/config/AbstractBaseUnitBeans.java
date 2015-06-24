@@ -29,7 +29,9 @@ import org.encuestame.utils.json.QuestionBean;
 import org.encuestame.utils.json.TweetPollBean;
 import org.encuestame.utils.security.SignUpBean;
 import org.encuestame.utils.web.CommentBean;
+import org.encuestame.utils.web.CreatePollBean;
 import org.encuestame.utils.web.DashboardBean;
+import org.encuestame.utils.web.PollBean;
 import org.encuestame.utils.web.QuestionAnswerBean;
 import org.encuestame.utils.web.SurveyBean;
 import org.encuestame.utils.web.UnitAttachment;
@@ -37,11 +39,10 @@ import org.encuestame.utils.web.UnitEmails;
 import org.encuestame.utils.web.UnitLists;
 import org.encuestame.utils.web.UnitLocationBean;
 import org.encuestame.utils.web.UnitLocationFolder;
-import org.encuestame.utils.web.PollBean;
 import org.encuestame.utils.web.UnitProjectBean;
 import org.encuestame.utils.web.UnitSurveySection;
 import org.encuestame.utils.web.UserAccountBean;
-import org.encuestame.utils.web.search.Search;
+import org.encuestame.utils.web.search.PollSearchBean;
 import org.encuestame.utils.web.search.TweetPollSearchBean;
 
 /**
@@ -51,6 +52,67 @@ import org.encuestame.utils.web.search.TweetPollSearchBean;
  */
 
 public abstract class AbstractBaseUnitBeans extends AbstractBase{
+
+    /**
+     *
+     * @param questionName
+     * @return
+     */
+    public CreatePollBean createPollBean(
+            final String questionName,
+            final String[] answer,
+            final String[] hashtag,
+            final String showComments,
+            final String showResults,
+            final Boolean multipleSelection,
+            final Integer limitVotes,
+            final Long closeDate) {
+        //"ssss", this.answers, "ALL", "APPROVE" ,Boolean.TRUE, this.tagBeanList
+        final CreatePollBean createPollBean = new CreatePollBean();
+        createPollBean.setQuestionName(questionName);
+        createPollBean.setAnswers(answer);
+        createPollBean.setHashtags(hashtag);
+        createPollBean.setAllowAdd(Boolean.FALSE); //disable by default
+        createPollBean.setLimitVote(limitVotes);
+        createPollBean.setMultiple(multipleSelection);
+        createPollBean.setResults(showResults);
+        createPollBean.setShowComments(showComments);
+        createPollBean.setCloseDate(closeDate);
+        createPollBean.setFolder_name(null); //disable by default
+        return createPollBean;
+    }
+
+    /**
+     * Helper to {@link CreatePollBean} Private
+     * @param questionName
+     * @param answer
+     * @param hashtag
+     * @param showComments
+     * @param showResults
+     * @param multipleSelection
+     * @param limitVotes
+     * @param closeDate
+     * @param isHidden
+     * @param isPasswordProtected
+     * @param password
+     * @return
+     */
+    public CreatePollBean createPrivatePollBean(
+            final String questionName,
+            final String[] answer,
+            final String[] hashtag,
+            final String showComments,
+            final String showResults,
+            final Boolean multipleSelection,
+            final Integer limitVotes,
+			final Long closeDate,
+			final Boolean isHidden,
+			final Boolean isPasswordProtected) {
+    	final CreatePollBean pollBean = this.createPollBean(questionName, answer, hashtag, showComments, showResults, multipleSelection, limitVotes, closeDate);
+    	pollBean.setIsHidden(isHidden);
+    	pollBean.setIsPasswordProtected(isPasswordProtected);
+    	return pollBean;
+    }
 
     /**
      * Create Unit Question Helper.
@@ -159,7 +221,7 @@ public abstract class AbstractBaseUnitBeans extends AbstractBase{
       * @param tpollId
       * @return
       */
-	public TweetPollBean createTweetPoll(
+    public TweetPollBean createTweetPoll(
         final Boolean allowLiveResults,
         final Boolean closeNotification,
         final Boolean completed,
@@ -174,13 +236,13 @@ public abstract class AbstractBaseUnitBeans extends AbstractBase{
         final String userTwitterAccount,
         final Long tpollId
         ){
-		final TweetPollBean tpollBean = this.createTweetPoll(allowLiveResults,
-				closeNotification, completed, publicationDateTweet,
-				publishPoll, resultNotification, schedule, scheduleDate,
-				tweetUrl, userId, questionBean, userTwitterAccount);
-		return tpollBean;
+        final TweetPollBean tpollBean = this.createTweetPoll(allowLiveResults,
+                closeNotification, completed, publicationDateTweet,
+                publishPoll, resultNotification, schedule, scheduleDate,
+                tweetUrl, userId, questionBean, userTwitterAccount);
+        return tpollBean;
 
-	}
+    }
 
     /**
      * Helper Create Unit Tweet Poll Publicated.
@@ -610,5 +672,48 @@ public abstract class AbstractBaseUnitBeans extends AbstractBase{
         tpollSearchBean.setTypeSearch(typeSearch);
         return tpollSearchBean;
     }
+
+    /**
+     * Create Advanced {@link PollSearchBean}
+     * @param isPublished
+     * @param isComplete
+     * @param isFavourite
+     * @param isScheduled
+     * @param keyword
+     * @param period
+     * @param max
+     * @param start
+     * @param typeSearch
+     * @param isHidden
+     * @param isPasswordProtected
+     * @return
+     */
+    public PollSearchBean createPollSearchBean(
+            final Boolean isPublished,
+            final Boolean isComplete,
+            final Boolean isFavourite,
+            final Boolean isScheduled,
+            final String keyword,
+            final String period,
+            final Integer max,
+            final Integer start,
+            final  TypeSearch typeSearch,
+            final Boolean isHidden,
+            final Boolean isPasswordProtected) {
+        final PollSearchBean pollSearchBean = new PollSearchBean();
+        pollSearchBean.setIsComplete(isComplete);
+        pollSearchBean.setIsFavourite(isFavourite);
+        pollSearchBean.setIsPublished(isPublished);
+        pollSearchBean.setIsScheduled(isScheduled);
+        pollSearchBean.setKeyword(keyword);
+        pollSearchBean.setMax(max);
+        pollSearchBean.setPeriod(period);
+        pollSearchBean.setStart(start);
+        pollSearchBean.setTypeSearch(typeSearch);
+        pollSearchBean.setIsHidden(isHidden);
+        pollSearchBean.setIsPasswordProtected(isPasswordProtected);
+        return pollSearchBean;
+    }
+
 
 }

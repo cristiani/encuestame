@@ -31,11 +31,16 @@ import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.Version;
+import org.encuestame.persistence.domain.question.Question;
+import org.encuestame.persistence.domain.security.SocialAccount;
+import org.encuestame.persistence.domain.security.UserAccount;
 import org.encuestame.persistence.domain.survey.Poll;
 import org.encuestame.persistence.domain.survey.Survey;
 import org.encuestame.persistence.domain.tweetpoll.TweetPoll;
 import org.encuestame.utils.DateUtil;
 import org.encuestame.utils.enums.SearchPeriods;
+import org.encuestame.utils.enums.Status;
+import org.encuestame.utils.social.SocialProvider;
 import org.hibernate.Criteria;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
@@ -138,6 +143,14 @@ public abstract class AbstractHibernateDaoSupport extends HibernateDaoSupport {
     public Date getNextDayMidnightDate(){
        return DateUtil.getNextDayMidnightDate();
     }
+
+    /**
+     * Return before midnight date -1.
+     * @return
+     */
+    public Date getBefDayMidnightDate(){
+        return DateUtil.getBeforeDayMidnightDate();
+     }
 
     /**
      * Return the current date midnight.
@@ -343,7 +356,7 @@ public abstract class AbstractHibernateDaoSupport extends HibernateDaoSupport {
      * @param keyword
      * @param period
      */
-    protected void advancedSearchOptions(
+    protected void advancedTweetPollSearchOptions(
             final DetachedCriteria criteria,
             final Boolean isCompleted,
             final Boolean isScheduled,
@@ -368,10 +381,78 @@ public abstract class AbstractHibernateDaoSupport extends HibernateDaoSupport {
         }
         if (isFavourite != null && isFavourite) {
             criteria.add(Restrictions.eq("favourites", isFavourite));
+
         }
         if (isPublished != null && isPublished) {
             criteria.add(Restrictions.eq("publishTweetPoll", isPublished));
         }
+    }
+
+    /**
+    *
+    * @param criteria
+    * @param isCompleted
+    * @param isScheduled
+    * @param isFavourite
+    * @param isPublished
+    * @param keyword
+    * @param period
+    */
+   protected void advancedPollSearchOptions(
+           final DetachedCriteria criteria,
+           final Boolean isCompleted,
+           final Boolean isScheduled,
+           final Boolean isFavourite,
+           final Boolean isPublished,
+           final Boolean isHidden,
+           final Boolean isPasswordProtected,
+           final String keyword,
+           final String period) {
+
+       //final SearchPeriods searchPeriods = SearchPeriods.getPeriodString(period);
+       //  calculateSearchPeriodsDates(searchPeriods, criteria, "createDate");
+       if (keyword != null) {
+           criteria.createAlias("question", "question");
+           criteria.add(Restrictions.like("question.question", keyword,
+                   MatchMode.ANYWHERE));
+       }
+       if (isCompleted != null && isCompleted) {
+           criteria.add(Restrictions.eq("completed", isCompleted));
+       }
+       if (isScheduled != null && isScheduled) {
+           criteria.add(Restrictions.eq("schedule", isScheduled));
+           criteria.add(Restrictions.isNotNull("scheduleDate"));
+       }
+       if (isFavourite != null && isFavourite) {
+           criteria.add(Restrictions.eq("favourites", isFavourite));
+
+       }
+       if (isPublished != null && isPublished) {
+           criteria.add(Restrictions.eq("publish", isPublished));
+       }
+       if (isHidden != null && isHidden) {
+           criteria.add(Restrictions.eq("isHidden", isHidden));
+       }
+       if (isPasswordProtected != null && isPasswordProtected) {
+           criteria.add(Restrictions.eq("isPasswordProtected", isPasswordProtected));
+       }
+   }
+
+    /**
+     *
+     * @param criteria
+     * @param property
+     * @param splist
+     */
+    public void criteriaSearchSocialLinksByType(final DetachedCriteria criteria,  final List<SocialProvider> splist, final List<SocialAccount> socialAccounts){
+          criteria.add(Restrictions.isNotNull("tweetId"));
+          criteria.add(Restrictions.eq("status", Status.SUCCESS));
+          if (splist.size() > 0) {
+              criteria.add(Restrictions.in("apiType", splist));
+          }
+          if (socialAccounts.size() > 0) {
+              criteria.add(Restrictions.in("socialAccount", socialAccounts));
+          }
     }
 
     /**
@@ -429,7 +510,7 @@ public abstract class AbstractHibernateDaoSupport extends HibernateDaoSupport {
      * @return
      */
     @SuppressWarnings("unchecked")
-    public List<Object[]> findByNamedParamGeoLocationItems(final String query,
+    public List findByNamedParamGeoLocationItems(final String query,
             final double latitude, final double longitude,
             final double distance, final double radius, final int maxItems,
             final Date startDate, final Date endDate) {

@@ -7,15 +7,15 @@
             <div class="section-signup" title="Sign Up with Username"
                 collapsed="false">
                 <div class="web-form-singup-container">
-                    <h1>
+                    <h3>
                         <spring:message code="signin.title" />
-                    </h1>
+                    </h3>
                     <fieldset class="textbox">
-                        <div class="section">
-                            <c:if test="${not empty message}">
-                                <p class="box ${message.infoType.css}">${message.message}</p>
-                            </c:if>
-                            <c:if test="${signinError}">
+                        <c:if test="${signinError}">
+                            <div class="section">
+                                <c:if test="${not empty message}">
+                                    <p class="box ${message.infoType.css}">${message.message}</p>
+                                </c:if>
                                 <div class="alert alert-error">
                                     <spring:message code="signin.error" />
                                     <br />
@@ -24,9 +24,9 @@
                                             code="signin.error.signup" /> <spring:message
                                             code="signin.error.free" />
                                     </a>
-                                </div>
-                            </c:if>
-                        </div>
+                                </div>                            
+                            </div>
+                        </c:if>
                         <div class="section">
                             <div class="validator-wrapper" id="rm">
                                     <input type="text"
@@ -43,20 +43,20 @@
                                         autofocus="autofocus" />
                             </div>
                         </div>
-                        <div class="web-section-option">
-                            <a href="<%=request.getContextPath()%>/user/forgot"> <spring:message
-                                    code="signin.forgot" />
-                            </a>
-                            <br/>
-                            <br/>
-                            <a href="<%=request.getContextPath()%>/user/signup"> <spring:message
-                                    code="signin.signup" />
-                            </a>
-                        </div>
-                        <div class="web-section-button right">
-                            <button type="submit" class=" btn submit btn-warning" name="submit">
+                        <div class="section right">
+                            <button type="submit" class=" btn submit btn-warning" name="submit" id="signin-button">
                                 <spring:message code="signin.button" />
                             </button>
+                        </div>
+                        <div class="web-section-option">
+                            <div>
+                                <a href="<%=request.getContextPath()%>/user/forgot" id="signin-forgot-pass"> <spring:message
+                                        code="signin.forgot" />
+                                </a>
+                            </div>
+                            <a href="<%=request.getContextPath()%>/user/signup" id="user-signup"> <spring:message
+                                    code="signin.signup" />
+                            </a>
                         </div>
                     </fieldset>
                 </div>

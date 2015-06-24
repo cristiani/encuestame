@@ -12,8 +12,13 @@
  */
 package org.encuestame.test.business.service.config;
 
+import org.encuestame.core.config.EnMePlaceHolderConfigurer;
 import org.encuestame.test.config.AbstractBaseUnitBeans;
+import org.junit.After;
+import org.junit.Before;
 import org.springframework.test.context.ContextConfiguration;
+
+import java.io.File;
 
 /**
  * Description Class.
@@ -30,9 +35,39 @@ import org.springframework.test.context.ContextConfiguration;
          })
 public abstract class AbstractServiceBase extends AbstractBaseUnitBeans{
 
+
+    public File targetDir() {
+        String relPath = getClass().getProtectionDomain().getCodeSource().getLocation().getFile();
+        File targetDir = new File(relPath);
+        if(!targetDir.exists()) {
+            targetDir.mkdir();
+        }
+        return targetDir;
+    }
+
+
+    @Before
+    public void baseInitConfigBefore() {
+        EnMePlaceHolderConfigurer.setProperty("encuestame.home", targetDir().getAbsolutePath());
+    }
+
+    @After
+    public void baseInitConfigAfter(){
+        //System.out.println("home-->"+EnMePlaceHolderConfigurer.getProperty("encuestame.home"));
+    }
+
+
     /**
      * Constructror.
      */
     public AbstractServiceBase() {
+    }
+
+    /**
+     *
+     * @param o
+     */
+    public void logPrint(Object o){
+        //System.out.println("debug::==>::" + o);
     }
 }

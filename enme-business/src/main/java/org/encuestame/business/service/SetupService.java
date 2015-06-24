@@ -21,19 +21,28 @@ import org.apache.log4j.Logger;
 import org.encuestame.business.setup.install.InstallDatabaseOperations;
 import org.encuestame.business.setup.install.demo.CSVParser;
 import org.encuestame.core.config.AdministratorProfile;
-import org.encuestame.core.config.XMLConfigurationFileSupport;
 import org.encuestame.core.config.EnMePlaceHolderConfigurer;
+import org.encuestame.core.config.XMLConfigurationFileSupport;
 import org.encuestame.core.filter.RequestSessionMap;
+import org.encuestame.core.security.util.WidgetUtil;
 import org.encuestame.core.service.AbstractBaseService;
 import org.encuestame.core.service.SetupOperations;
+import org.encuestame.core.service.imp.MailServiceOperations;
 import org.encuestame.core.service.imp.SecurityOperations;
+import org.encuestame.core.util.EnMeUtils;
+import org.encuestame.persistence.exception.EnMeExpcetion;
 import org.encuestame.persistence.exception.EnmeFailOperation;
 import org.encuestame.utils.DateUtil;
+import org.encuestame.utils.ShortUrlProvider;
 import org.encuestame.utils.enums.TypeDatabase;
 import org.encuestame.utils.social.SocialNetworkBean;
 import org.encuestame.utils.web.UserAccountBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.MailSendException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import javax.annotation.Resource;
 
 /**
  * Define all setup operations.
@@ -41,6 +50,7 @@ import org.springframework.stereotype.Service;
  * @since Sep 9, 2011
  */
 @Service(value = "setupService")
+@Transactional
 public class SetupService extends AbstractBaseService implements SetupOperations {
 
     /** Log. **/
@@ -65,14 +75,10 @@ public class SetupService extends AbstractBaseService implements SetupOperations
     private SecurityOperations securityOperations;
 
     /**
-     * Set {@link InstallDatabaseOperations}.
-     *
-     * @param install
-     *            the install to set
+     *  {@link org.encuestame.core.service.startup.MailService}.
      */
-    public void setInstall(final InstallDatabaseOperations install) {
-        this.install = install;
-    }
+    @Resource(name= "mailService")
+    private MailServiceOperations mailService;
 
     /**
      *
@@ -90,12 +96,17 @@ public class SetupService extends AbstractBaseService implements SetupOperations
      * @see org.encuestame.core.service.SetupOperations#validateInstall()
      */
     public void validateInstall() {
-        log.debug("validateInstall ------------");
         final XMLConfigurationFileSupport config = EnMePlaceHolderConfigurer.getConfigurationManager();
-        log.debug("validateInstall ------------"+config.getXmlConfiguration().getBasePath());
         config.getXmlConfiguration().addProperty("install.date", DateUtil.getCurrentFormatedDate());
         config.getXmlConfiguration().addProperty("install.uuid", RandomStringUtils.randomAlphanumeric(50));
-        log.debug("validateInstall ------------");
+    }
+
+    /*
+     * (non-Javadoc)
+     * @see org.encuestame.core.service.SetupOperations#finishInstall()
+     */
+    public void finishInstall(){
+        EnMePlaceHolderConfigurer.setSystemInstalled(Boolean.TRUE);
     }
 
     /**
@@ -112,10 +123,35 @@ public class SetupService extends AbstractBaseService implements SetupOperations
         } catch (Exception e) {
             log.fatal(e);
             RequestSessionMap.setErrorMessage(e.getMessage());
-            e.printStackTrace();
+            //e.printStackTrace();
             return "fail";
         }
         return "ok"; //TODO: replace by enum in the future.
+    }
+
+    /**
+     * Check the required
+     * @return
+     */
+    public String preCheckSetup(){
+        final String shortD = EnMePlaceHolderConfigurer.getProperty("short.default");
+        final ShortUrlProvider provider = ShortUrlProvider.get(shortD);
+        final String oURL = "http://www.google.es";
+        final String shorterUrl = WidgetUtil.createShortUrl(provider, oURL);
+        if (shorterUrl == oURL) {
+            return "no";
+        }
+        try {
+            if (EnMePlaceHolderConfigurer.getBooleanProperty("application.email.enabled")) {
+                getMailService().sendStartUpNotification("testing email installation");
+            }
+        } catch (Exception ex) {
+            RequestSessionMap.setErrorMessage(ex.getMessage());
+            //ex.printStackTrace();
+            log.error(ex);
+            return "no";
+        }
+        return "yes";
     }
 
     /*
@@ -141,56 +177,31 @@ public class SetupService extends AbstractBaseService implements SetupOperations
 
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see org.encuestame.core.service.SetupOperations#getSQLExecuted()
-     */
-    @Override
-    public String getSQLExecuted() {
-        log.debug("******************************************");
-        log.debug("SQL " + this.install.getScriptLog());
-        return this.install.getScriptLog();
-    }
-
-    /**
-     * Clean the version to possible extra string like, release, rc, m1, m2.
-     * @param version
-     * @return
-     */
-    private String cleanVersion(final String version) {
-        final Integer _ = version.indexOf("-");
-        log.debug("******************************************");
-        log.debug("cleanVersion " + _);
-        if (_ != -1) {
-            final String new_version = version.substring(0, _);
-            log.debug("cleanVersion " + new_version);
-            return new_version;
-        } else {
-            log.debug("cleanVersion NO CHANGES");
-            return version;
-        }
-    }
-
     /**
      * Check status version.
      * @return the status.
+     * @throws EnMeExpcetion
      */
-    public String checkStatus() {
+    public String checkStatus() throws EnMeExpcetion {
         //TODO: replace by ENUMs
-        log.debug("Check Version Status");
         String status = "install";
         final String currentVersion = EnMePlaceHolderConfigurer.getProperty("app.version");
-        log.debug("Current Version : "+ currentVersion);
         final String installedVersion = EnMePlaceHolderConfigurer.getConfigurationManager().getInstalledVersion();
-        log.debug("Installed Version : "+installedVersion);
         if (installedVersion != null) {
-            float f1 = Float.valueOf(cleanVersion(currentVersion));
-            log.debug("Current Version : "+f1);
-            float f2 = Float.valueOf(cleanVersion(installedVersion));
-            log.debug("Installed Version : "+f2);
-            if (f2 < f1) {
-                status = "upgrade";
+            if (currentVersion != null) {
+                final int[] versionAsArrayCurrent = EnMeUtils.cleanVersion(currentVersion);
+                final int[] versionAsArrayInstalled = EnMeUtils.cleanVersion(installedVersion);
+                if (versionAsArrayCurrent[0] > versionAsArrayInstalled[0]) {
+                    status = "upgrade";
+                } else if (versionAsArrayCurrent[0] == versionAsArrayInstalled[0]) {
+                    if (versionAsArrayCurrent[1] > versionAsArrayInstalled[1]) {
+                        status = "upgrade";
+                    } else if (versionAsArrayCurrent[1] == versionAsArrayInstalled[1]) {
+                        if (versionAsArrayCurrent[2] > versionAsArrayInstalled[2]) {
+                            status = "upgrade";
+                        }
+                    }
+                }
             }
         }
         return status;
@@ -211,22 +222,6 @@ public class SetupService extends AbstractBaseService implements SetupOperations
         return account;
     }
 
-    /**
-     * @return the securityOperations
-     */
-    public SecurityOperations getSecurityOperations() {
-        return securityOperations;
-    }
-
-    /**
-     * @param securityOperations
-     *            the securityOperations to set
-     */
-    public void setSecurityOperations(
-            final SecurityOperations securityOperations) {
-        this.securityOperations = securityOperations;
-    }
-
     /*
      * (non-Javadoc)
      *
@@ -238,7 +233,7 @@ public class SetupService extends AbstractBaseService implements SetupOperations
              this.install.dropAll();
              return true;
          } catch (Exception e) {
-             e.printStackTrace();
+             //e.printStackTrace();
              log.fatal(e);
              RequestSessionMap.setErrorMessage(e.getMessage());
              return false;
@@ -259,7 +254,7 @@ public class SetupService extends AbstractBaseService implements SetupOperations
                     EnMePlaceHolderConfigurer
                     .getIntegerProperty("demo.votes.by.survey"));
         } catch (Exception e) {
-            e.printStackTrace();
+            //e.printStackTrace();
             log.fatal(e);
             RequestSessionMap.setErrorMessage(e.getMessage());
         }
@@ -319,21 +314,12 @@ public class SetupService extends AbstractBaseService implements SetupOperations
      */
     @Override
     public List<SocialNetworkBean> listAllNetworkConfigurationSocial() {
-        // TODO Auto-generated method stub
+
         return null;
     }
 
-    /**
-     * @return the csvParser
-     */
-    public CSVParser getCsvParser() {
-        return csvParser;
-    }
-
-    /**
-     * @param csvParser the csvParser to set
-     */
-    public void setCsvParser(CSVParser csvParser) {
-        this.csvParser = csvParser;
+    @Override
+    public void checkSocialNetworks() {
+        // TODO Auto-generated method stub
     }
 }

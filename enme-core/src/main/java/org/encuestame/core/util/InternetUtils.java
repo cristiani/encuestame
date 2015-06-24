@@ -64,7 +64,7 @@ public class InternetUtils {
      */
     public static boolean validateUrl(final String url){
         final String[] schemes = {"http","https"};
-        if (!EnMePlaceHolderConfigurer.getBooleanProperty("application.debug.mode")) {
+        if (!EnMePlaceHolderConfigurer.getBooleanProperty("encuestame.error.debug")) {
             final UrlValidator urlValidator = new UrlValidator(schemes);
             return urlValidator.isValid(url);
         } else {
@@ -89,7 +89,7 @@ public class InternetUtils {
     }
 
     /**
-     *
+     * Return the domain of the application either defined in the config file or from the HttpServletRequest.
      * @param request
      * @return
      */

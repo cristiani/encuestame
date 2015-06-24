@@ -1,6 +1,8 @@
 */target/*
 .svn*
+.idea
 obj/
+*.iml
 bin/
 *.suo
 *.user
@@ -8,11 +10,15 @@ Log/
 log/
 *.db
 *.log*
+overlays
 *./*.log*
 *.releaseBackup
 .sass-cache
 release.properties
 *.settings/*
+enme-war/enme-tomcat-app/.settings
+enme-war/enme-views/.settings
+*.prefs
 enme-js/chart/*.settings/*
 enme-js/cometd/*.settings/*
 enme-js/resources-enme-war/*.settings/*
@@ -61,3 +67,7 @@ enme-war/src/main/webapp/resource/js/dijit/
 enme-war/src/main/webapp/resource/js/dojo/
 enme-war/src/main/webapp/resource/js/dojox/
 enme-war/src/main/webapp/resource/js/org/
+enme-war/web-app/jetty-webapp/overlays/
+enme-war/web-app/tomcat-webapp/overlays/
+enme-war/web-app/weblogic-webapp/overlays/
+scripts/clover.license

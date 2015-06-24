@@ -18,15 +18,31 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.StringReader;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.DecimalFormat;
-import java.util.Random;
+import java.util.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.log4j.Logger;
+import org.encuestame.persistence.domain.HashTag;
+import org.encuestame.persistence.domain.question.QuestionAnswer;
+import org.encuestame.persistence.domain.tweetpoll.TweetPoll;
+import org.encuestame.persistence.domain.tweetpoll.TweetPollSwitch;
+import org.encuestame.persistence.domain.survey.Poll;
+import org.encuestame.persistence.domain.tweetpoll.TweetPoll;
+import org.encuestame.persistence.exception.EnMeExpcetion;
 import org.encuestame.utils.net.XFordwardedInetAddressUtil;
+import org.encuestame.utils.web.HashTagBean;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+import org.w3c.dom.Document;
+import org.xml.sax.InputSource;
 
 /**
  * Commons utils.
@@ -60,6 +76,8 @@ public class EnMeUtils {
     public static final long HIT_DEFAULT = 1;
 
     public static final String HASH = "#";
+    
+    public static final String DEFAULT_LANG = "en";
 
     public static final String SPACE = " ";
 
@@ -137,8 +155,10 @@ public class EnMeUtils {
      * @param dst
      * @throws IOException
      */
-    public static void copy(File src, File dst) throws IOException {
-            InputStream in = new FileInputStream(src);
+    public static void copy(InputStream in, File dst) throws IOException {
+        //log.debug("copy src" + src.getPath());
+        log.debug("copy dst" + dst.getPath());
+        //InputStream in = new FileInputStream(src);
             OutputStream out = new FileOutputStream(dst);
             // Transfer bytes from in to out
             byte[] buf = new byte[1024];
@@ -214,6 +234,34 @@ public class EnMeUtils {
         }
         return ip;
     }
+    
+    /**
+     * 
+     * @param xml
+     * @return
+     * @throws Exception
+     */
+    public static Document loadXMLFromString(String xml) throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        InputSource is = new InputSource(new StringReader(xml));
+        return builder.parse(is);
+    }
+    
+    /**
+     * 
+     * @param arrayHashTags
+     * @return
+     */
+    public static List<HashTagBean> createHashTagBeansList(final String[] arrayHashTags) {
+        final List<HashTagBean> tagBeanlist = new ArrayList<HashTagBean>();
+        for (int i = 0; i < arrayHashTags.length; i++) {
+            final HashTagBean itemTagBean = new HashTagBean();
+            itemTagBean.setHashTagName(arrayHashTags[i]);
+            tagBeanlist.add(itemTagBean);
+        }
+        return tagBeanlist;
+    }
 
     /**
      * Return a random ip.
@@ -232,5 +280,115 @@ public class EnMeUtils {
     public static Double convertDegreesToRadians(final double degreesValue) {
         final Double radiansValue = Math.toRadians(degreesValue);
         return radiansValue;
+    }
+
+
+    /**
+     * Clean the version to possible extra string like, release, rc, m1, m2.
+     * @param version
+     * @return
+     * @throws EnMeExpcetion 
+     */
+    public static  int[] cleanVersion(String version) throws EnMeExpcetion {
+        if (version.endsWith("-SNAPSHOT")){
+            version = version.replace("-SNAPSHOT", "");
+        }
+        final String[] versionArray = version.split("\\.");
+        int[] arrayAsIng = new int[3];
+        //convert to int
+        for (int i = 0; i < versionArray.length; i++) {
+            arrayAsIng[i] = Integer.valueOf(versionArray[i]);
+        }
+        if (arrayAsIng.length == 3) {
+            return arrayAsIng;
+        } else {
+            throw new EnMeExpcetion("version not valid  or not compatible");
+        }
+    }
+
+    /**
+     * Create a tweetpoll body as html, links included.
+     * @param tweetPoll TweetPoll
+     * @param question
+     * @param answers list of QuestionAnswer
+     * @param hashTags list of HashTag
+     * @return
+     */
+    public static String generateBodyTweetPollasHtml(
+            final String domain,
+            final TweetPoll tweetPoll,
+            final String question,
+            final List<TweetPollSwitch> answers,
+            final Set<HashTag> hashTags){
+        StringBuffer buffer = new StringBuffer();
+        String q = tweetPoll.getQuestion().getQuestion();
+        buffer.append("<b class=\"q-enme\">");
+        buffer.append(q);
+        buffer.append("</b>");
+        buffer.append(" ");
+        for (TweetPollSwitch answer : answers) {
+            buffer.append("<b class=\"answer\">");
+            buffer.append(answer.getAnswers().getAnswer());
+            buffer.append("</b>");
+            buffer.append(" ");
+            buffer.append(" <a target=\"_blank\" href=\"");
+            buffer.append(answer.getShortUrl());
+            buffer.append("\">");
+            buffer.append(answer.getShortUrl());
+            buffer.append("");
+            buffer.append("</a>");
+        }
+        for (HashTag hashTag : hashTags) {
+            buffer.append(" ");
+            buffer.append("<a target=\"_blank\" href=\"");
+            buffer.append(domain + "\\tag\\");
+            buffer.append(hashTag.getHashTag());
+            buffer.append("\">");
+            buffer.append("#");
+            buffer.append(hashTag.getHashTag());
+            buffer.append("</a>");
+        }
+        return buffer.toString();
+    }
+
+    /**
+     * Return a format date as string.
+     * @param date
+     * @param format
+     * @return
+     */
+    public static String formatDate(final Date date, final String format) {
+        DateTime convertDate = new DateTime(date);
+        DateTimeFormatter fmt = DateTimeFormat.forPattern(format);
+        return convertDate.toString(fmt);
+    }
+
+    /**
+     * Return a default poll url
+     * @param poll
+     * @return
+     */
+    public static String createUrlPollAccess(final String domain, final Poll poll) {
+        StringBuffer urlBuffer = new StringBuffer(domain);
+        urlBuffer.append("/poll/");
+        urlBuffer.append(poll.getPollId());
+        urlBuffer.append("/");
+        urlBuffer.append(poll.getQuestion().getSlugQuestion());
+        return urlBuffer.toString();
+    }
+
+    /**
+     * Return a TweetPoll url
+     * @param domain
+     * @param tweetPoll
+     * @return
+     */
+    public static String createTweetPollUrlAccess(final String domain, final TweetPoll tweetPoll) {
+        final StringBuilder builder = new StringBuilder(domain);
+        builder.append("/tweetpoll/");
+        builder.append(tweetPoll.getTweetPollId());
+        builder.append("/");
+        builder.append(tweetPoll.getQuestion().getSlugQuestion());
+        return builder.toString();
     }
 }
